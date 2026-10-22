@@ -1768,12 +1768,52 @@ function mxSync(){ const D=lernData(), M=mxGet(); if(!M.length){ delete D[MX_ID]
   D[MX_ID]={les:{"1":uz?"Xatolarim":"Мои ошибки"},sec:[uz?"O‘yinlardagi xatolar":"Ошибки из игр"],it:M.map(x=>[1,0,x.de,x.de,x.q,"",0]),title:uz?"📝 Xatolarim":"📝 Мои ошибки",lab:{"1":uz?"Xatolarim":"Мои ошибки"}}; return MX_ID; }
 function mxOpen(){ if(mxSync()) lrnOpen(MX_ID); }
 const GSS={};
-function gssHTML(key,txt,mx,src){ const ru=state.lang==="ru"; GSS[key]={txt,mx,src}; const sv=!!GSS[key].done;
+function gssHTML(key,txt,mx,src,o){ const ru=state.lang==="ru"; GSS[key]={txt,mx,src,o}; const sv=!!GSS[key].done;
   return `<div class="lrn-card gss" data-gssk="${key}"><div class="gss-b"><button type="button" class="btn primary" data-gss="share">📤 ${ru?"Поделиться результатом":"Natijani ulashish"}</button>${mx&&mx.length?`<button type="button" class="btn" data-gss="save">💾 ${ru?`Сохранить ошибки (${mx.length})`:`Xatolarni saqlash (${mx.length})`}</button>`:""}</div><p class="ch-net gss-st"></p></div>`; }
-async function gssShare(txt){ const url=CH_SITE; try{ if(navigator.share){ await navigator.share({text:txt+"\n"+url}); return; } }catch(e){ if(e&&e.name==="AbortError") return; } window.open("https://t.me/share/url?url="+encodeURIComponent(url)+"&text="+encodeURIComponent(txt),"_blank","noopener"); }
+/* 🖼 Ulashish — chiroyli rasm bilan, link yo'q (2026-10-22, Otabek: «share qilganda chiroyli rasm chiqsin … nma kk manga link») */
+function gcRR(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function gcDraw(o){ const W=1080,H=1350, cv=document.createElement("canvas"); cv.width=W; cv.height=H; const c=cv.getContext("2d");
+  const HAND='"Patrick Hand", Neucha, "Comic Sans MS", cursive', SANS='Nunito, system-ui, -apple-system, sans-serif', ru=state.lang==="ru";
+  const g=c.createLinearGradient(0,0,W,H); g.addColorStop(0,o.kg?"#5B2A9E":"#1F4FA0"); g.addColorStop(1,o.kg?"#2B1460":"#12305F"); c.fillStyle=g; c.fillRect(0,0,W,H);
+  c.globalAlpha=.07; c.fillStyle="#fff"; c.beginPath(); c.arc(W-80,120,260,0,7); c.fill(); c.beginPath(); c.arc(60,H-80,200,0,7); c.fill(); c.globalAlpha=1;
+  /* konfetti */ const cols=["#FFD166","#7EE2A8","#FF9F7A","#8EC5FF","#F49AC2"]; let sd=7; const rnd=()=>{ sd=(sd*9301+49297)%233280; return sd/233280; };
+  for(let i=0;i<46;i++){ c.save(); c.translate(rnd()*W,rnd()*H*.42); c.rotate(rnd()*6); c.fillStyle=cols[i%5]; c.globalAlpha=.55; c.fillRect(-9,-4,18,8); c.restore(); }
+  c.textAlign="center"; c.textBaseline="alphabetic";
+  c.fillStyle="rgba(255,255,255,.78)"; c.font=`700 34px ${SANS}`; c.fillText((o.kind||"").toUpperCase(),W/2,104);
+  c.fillStyle="rgba(255,255,255,.9)"; c.font=`500 38px ${SANS}`; let y=160; cardWrap(c,o.title||"",W-160).slice(0,2).forEach(l=>{ c.fillText(l,W/2,y); y+=48; });
+  if(o.rows){ /* ustoz: reyting rasmi */
+    c.font=`110px ${SANS}`; c.fillText("🏆",W/2,y+120); y+=230; const md=["🥇","🥈","🥉"];
+    o.rows.slice(0,8).forEach((r,i)=>{ const yy=y+i*86; c.fillStyle=i<3?"rgba(255,209,102,.16)":"rgba(255,255,255,.08)"; gcRR(c,90,yy-58,W-180,74,22); c.fill();
+      c.textAlign="left"; c.fillStyle="#fff"; c.font=`600 40px ${SANS}`; c.fillText(md[i]||String(i+1),120,yy-8); c.font=`54px ${HAND}`; c.fillText(String(r[0]).slice(0,22),200,yy-6);
+      c.textAlign="right"; c.font=`800 42px ${SANS}`; c.fillStyle=i<3?"#FFD166":"#fff"; c.fillText(r[1],W-120,yy-8); c.textAlign="center"; });
+    y+=Math.min(8,o.rows.length)*86+30;
+    if(o.miss&&o.miss.length&&y<H-230){ c.fillStyle="#FF9F7A"; c.font=`700 34px ${SANS}`; c.fillText(ru?"❌ Частые ошибки":"❌ Ko‘p xato qilinganlar",W/2,y+10); c.fillStyle="rgba(255,255,255,.85)"; c.font=`44px ${HAND}`;
+      o.miss.slice(0,Math.max(1,Math.floor((H-200-y)/54))).forEach((m,i)=>c.fillText(String(m).slice(0,40),W/2,y+66+i*54)); }
+  } else { /* o'quvchi: natija kartasi */
+    c.font=`120px ${SANS}`; c.fillText(o.place===1?"🏆":o.place===2?"🥈":o.place===3?"🥉":o.kg?"🎮":"🎯",W/2,y+130); y+=270;
+    if(o.name){ c.fillStyle="#fff"; c.font=`92px ${HAND}`; c.fillText(String(o.name).slice(0,24),W/2,y); y+=40; }
+    const pct=o.n?Math.round(o.ok/o.n*100):0, cy=Math.max(y+230,700), r=180;
+    c.lineWidth=34; c.lineCap="round"; c.strokeStyle="rgba(255,255,255,.15)"; c.beginPath(); c.arc(W/2,cy,r,0,7); c.stroke();
+    c.strokeStyle=pct>=75?"#7EE2A8":pct>=50?"#FFD166":"#FF9F7A"; c.beginPath(); c.arc(W/2,cy,r,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(pct,1)/100); c.stroke();
+    c.fillStyle="#fff"; const sc=`${o.okS||o.ok}/${o.n}`; let fs=124; do{ c.font=`800 ${fs}px ${SANS}`; fs-=4; }while(c.measureText(sc).width>r*1.55&&fs>50); c.fillText(sc,W/2,cy+30);
+    c.fillStyle="rgba(255,255,255,.7)"; c.font=`600 44px ${SANS}`; c.fillText(pct+"%",W/2,cy+96);
+    if(o.place){ c.fillStyle="#FFD166"; c.font=`800 64px ${SANS}`; c.fillText(ru?`${o.place}-е место из ${o.tot}`:`${o.place}-o‘rin · ${o.tot} kishidan`,W/2,cy+r+110); }
+    c.fillStyle="#FFD166"; c.font=`84px ${HAND}`; c.fillText(cardPraise(pct),W/2,cy+r+(o.place?210:120)); }
+  const d=new Date(), p2=x=>String(x).padStart(2,"0");
+  c.font=`500 30px ${SANS}`; c.fillStyle="rgba(255,255,255,.6)"; c.textAlign="left"; c.fillText(`${p2(d.getDate())}.${p2(d.getMonth()+1)}.${d.getFullYear()}`,70,H-60);
+  c.textAlign="right"; c.font=`40px ${HAND}`; c.fillStyle="rgba(255,255,255,.85)"; c.fillText(window.BLITZ?"Blitz":"Otabek Komilov",W-70,H-58);
+  return cv; }
+async function gssShare(txt,o){ try{ await Promise.all(['92px "Patrick Hand"','800 100px Nunito','600 40px Nunito'].map(x=>document.fonts.load(x))); }catch(e){}
+  const cv=gcDraw(o||{title:txt}), blob=await new Promise(r=>cv.toBlob(r,"image/png")), name=(o&&o.kg?"oyin":"live-test")+"-natija.png";
+  try{ const file=new File([blob],name,{type:"image/png"}); if(navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({files:[file],text:txt}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
+  /* ulashish yo'q (kompyuter) — rasm oynada: saqlash yoki nusxalash */
+  const ru=state.lang==="ru", url=URL.createObjectURL(blob); let ov=document.getElementById("gc-ov"); if(!ov){ ov=document.createElement("div"); ov.id="gc-ov"; ov.className="gc-ov"; document.body.appendChild(ov); }
+  ov.innerHTML=`<div class="gc-b"><img src="${url}" alt=""><div class="ch-btns"><a class="btn primary" href="${url}" download="${name}">⬇ ${ru?"Сохранить картинку":"Rasmni saqlash"}</a>${navigator.clipboard&&window.ClipboardItem?`<button type="button" class="btn" data-gccopy>📋 ${ru?"Копировать":"Nusxalash"}</button>`:""}<button type="button" class="btn" data-gcx>✕</button></div></div>`; ov.hidden=false; ov.__blob=blob; }
+document.addEventListener("click",e=>{ const ov=document.getElementById("gc-ov"); if(!ov||ov.hidden) return; if(e.target.closest("[data-gcx]")||e.target===ov){ ov.hidden=true; return; }
+  const cp=e.target.closest("[data-gccopy]"); if(cp){ navigator.clipboard.write([new ClipboardItem({"image/png":ov.__blob})]).then(()=>{ cp.textContent="✓"; },()=>{ cp.textContent="✗"; }); } });
 document.addEventListener("click",e=>{ if(e.target.closest("[data-mxopen]")){ mxOpen(); return; } });
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-gss]"); if(!b) return; const card=b.closest("[data-gssk]"), G=card&&GSS[card.dataset.gssk]; if(!G) return; const ru=state.lang==="ru", st=card.querySelector(".gss-st");
-  if(b.dataset.gss==="share"){ gssShare(G.txt); return; }
+  if(b.dataset.gss==="share"){ gssShare(G.txt,G.o); return; }
   if(b.dataset.gss==="save"){ const n=mxAdd(G.mx,G.src); G.done=1; b.outerHTML=`<button type="button" class="btn" data-gss="learn">📝 ${ru?"Учить ошибки →":"Xatolarni yodlash →"}</button>`; if(st) st.textContent=ru?`✓ Сохранено: ${n} новых · всего в «Мои ошибки»: ${mxGet().length}`:`✓ Saqlandi: ${n} ta yangi · «Xatolarim»da jami ${mxGet().length} ta`; return; }
   if(b.dataset.gss==="learn"){ try{ if(typeof ltpClose==="function"&&!document.getElementById("ltp")?.hidden) ltpClose(); }catch(err){} try{ const k=document.getElementById("kgp"); if(k&&!k.hidden){ k.hidden=true; document.body.style.overflow=""; } }catch(err){} mxOpen(); } });
 function lrnKey(id){ try{ const d=window.__LERN&&window.__LERN[id]; if(d&&d.alias) id=d.alias; }catch(e){} return "lern:"+id; }
@@ -4898,7 +4938,7 @@ function ltpDone(){
     ${miss.length?`<div class="lrn-card"><h3>${esc(lz("mist"))} (${miss.length})</h3><ul class="lt-mis">${miss.map(o=>`<li><span>${esc(o.x.q)}</span><b>${artCol(o.x.de)}</b>${LTP.last[o.k]?`<s>${esc(LTP.last[o.k])}</s>`:""}${LTP.best[o.k]&&LTP.best[o.k]<1?`<em>≈ ${ltSc(LTP.best[o.k])}</em>`:""}</li>`).join("")}</ul></div>`:""}
     ${(()=>{ const ru=(LTP.lang||state.lang)==="ru", P=Object.assign({},LTP.players); P[LTP.me]={n:LTP.name,ok:LTP.ok,ms:LTP.ms,tk:LTP.tk||0,st:"done"}; const R=ltRank(P), pl=R.findIndex(p=>p.id===LTP.me)+1;
       const txt=ru?`🎯 Live test · ${ltTitle(LTP.c)}\nМой результат: ${ltSc(LTP.ok)} из ${n}${pl?` · ${pl}-е место из ${R.length}`:""} 🏁`:`🎯 Live test · ${ltTitle(LTP.c)}\nNatijam: ${ltSc(LTP.ok)} / ${n}${pl?` · ${pl}-o‘rin (${R.length} kishidan)`:""} 🏁`;
-      return gssHTML("lt",txt,miss.map(o=>({de:o.x.de,q:o.x.q})),"Live test"); })()}
+      return gssHTML("lt",txt,miss.map(o=>({de:o.x.de,q:o.x.q})),"Live test",{kind:"🎯 Live test",title:ltTitle(LTP.c),name:LTP.name,ok:LTP.ok,okS:ltSc(LTP.ok),n,place:pl,tot:R.length}); })()}
     <div class="lrn-card"><h3>${esc(lz("board"))}</h3><div id="lt-board"></div></div></div>`;
   ltpBoard();
 }
@@ -5165,6 +5205,7 @@ function tpBoard(){
 /* Live test yakuni: eng ko'p xato qilingan so'zlar, ulashish va saqlash (2026-10-22, Otabek) */
 function tpLtMiss(B){ const qs=ltQs(B.c), C={}; Object.values(B.players).forEach(p=>(p.mw||[]).forEach(k=>{ if(qs[k]) C[k]=(C[k]||0)+1; })); return Object.entries(C).sort((a,b)=>b[1]-a[1]).map(([k,c])=>[qs[k].de,qs[k].q,c]); }
 function tpLtRep(B){ return {t:Date.now(),title:ltTitle(B.c),n:B.n,pl:ltRank(B.players).map(p=>[p.n,p.ok,p.ms]),mw:tpLtMiss(B).slice(0,20)}; }
+function tpLtImg(R){ return {kind:"🎯 Live test",title:R.title,rows:R.pl.map(p=>[p[0],`${ltSc(p[1])}/${R.n}`]),miss:R.mw.map(m=>`${m[0]} — ${m[1]}`)}; }
 function tpLtTxt(R){ const md=["🥇","🥈","🥉"]; return `🎯 Live test · ${R.title}\n${new Date(R.t).toLocaleDateString("uz-UZ")} · ${R.pl.length} o‘quvchi\n\n🏆 Natijalar:\n${R.pl.slice(0,10).map((p,i)=>`${md[i]||(i+1)+"."} ${p[0]} — ${ltSc(p[1])}/${R.n}`).join("\n")}${R.mw.length?`\n\n❌ Ko‘p xato qilingan so‘zlar:\n${R.mw.slice(0,8).map(m=>`• ${m[0]} — ${m[1]} (${m[2]})`).join("\n")}`:""}`; }
 function tpLtMwDraw(){ const B=TP.b, el=document.getElementById("tp-ltmw"); if(!B||!el) return; const M=tpLtMiss(B).slice(0,10); el.innerHTML=M.length?`<h3 class="tp-mwh">❌ Ko‘p xato qilingan so‘zlar</h3><ul class="lt-mis">${M.map(m=>`<li><span>${esc(m[1])}</span><b>${artCol(m[0])}</b><em>👥 ${m[2]}</em></li>`).join("")}</ul>`:""; }
 function tpLtReps(){ return kgLS("tch:ltreps",[]); }
@@ -5701,7 +5742,7 @@ document.addEventListener("click",e=>{
   const vq=e.target.closest("[data-tpvq]"); if(vq){ TP.vqTab=vq.dataset.tpvq; tpVq(); return; }
   const vo=e.target.closest("#tch [data-open]"); if(vo){ V.el.classList.add("over"); openViewer(byId[vo.dataset.open]); return; }
   const vd=e.target.closest("#tch [data-dl]"); if(vd){ downloadMat(byId[vd.dataset.dl]); return; }
-  { const r=e.target.closest("#tch [data-tpltr]"); if(r){ const L=tpLtReps(), R=L[+r.dataset.i]; if(!R) return; if(r.dataset.tpltr==="share") gssShare(tpLtTxt(R)); else if(confirm("O‘chirilsinmi?")){ L.splice(+r.dataset.i,1); kgLSset("tch:ltreps",L); tpLt(); } return; } }
+  { const r=e.target.closest("#tch [data-tpltr]"); if(r){ const L=tpLtReps(), R=L[+r.dataset.i]; if(!R) return; if(r.dataset.tpltr==="share") gssShare(tpLtTxt(R),tpLtImg(R)); else if(confirm("O‘chirilsinmi?")){ L.splice(+r.dataset.i,1); kgLSset("tch:ltreps",L); tpLt(); } return; } }
   const lt=e.target.closest("#tch [data-tplt]"); if(lt){ const k=lt.dataset.tplt, v=lt.dataset.v; if(k==="lv"){ TP.ltLv=v; TP.sel=new Set(); TP.ltH=1; } else if(k==="lang") TP.ltLang=v; else { TP.ltH=+v; TP.sel=new Set(); } tpLt(); return; }
   const ls=e.target.closest("[data-tples]"); if(ls){ const n=+ls.dataset.tples; TP.sel.has(n)?TP.sel.delete(n):TP.sel.add(n); tpLt(); return; }
   const tn=e.target.closest("[data-tpn]"); if(tn){ TP.n=+tn.dataset.tpn; tpLt(); return; }
@@ -5725,7 +5766,7 @@ document.addEventListener("click",e=>{
     else if(a==="create") tpCreate();
     else if(a==="start") tpCtl("run"); else if(a==="stop") tpCtl("end");
     else if(a==="again"){ if(TP.b&&TP.b.mq) TP.b.mq.end(); TP.b=null; clearInterval(TP.bT); TP.tab="lt"; tpRender(); }
-    else if(a==="ltshare"){ if(TP.b) gssShare(tpLtTxt(tpLtRep(TP.b))); }
+    else if(a==="ltshare"){ if(TP.b){ const R=tpLtRep(TP.b); gssShare(tpLtTxt(R),tpLtImg(R)); } }
     else if(a==="ltsave"){ const B=TP.b; if(B){ const R=tpLtRep(B); R.code=B.code; const L=tpLtReps().filter(x=>x.code!==B.code); L.unshift(R); kgLSset("tch:ltreps",L.slice(0,40)); B.saved=1; t.textContent="✓ Saqlandi"; } }
     else if(a==="qrbig") tpQrBig(true); else if(a==="qrclose") tpQrBig(false);
     else if(a==="copy"){ const u=ltLink(TP.b.code); (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>{ t.textContent="✓ Nusxalandi"; }).catch(()=>{ prompt("",u); }); }
@@ -6205,7 +6246,7 @@ function kgpDone(){ const n=KGP.qs.length, me=kgpStat(KGP.a), miss=KGP.qs.map((q
     ${kgpGss(me.ok,n,miss)}${kgpMissHTML(miss)}<div class="lrn-card"><h3>${esc(kz("board"))}</h3><div id="kg-board"></div></div></div>`; kgpBoard(); }
 function kgpGss(ok,n,miss,pl,tot){ const ru=state.lang==="ru", nm=(KGP.g&&KGP.g.nm)||"";
   const txt=ru?`🎮 Игра в классе · ${nm}\nМой результат: ${ok} из ${n}${pl?` · ${pl}-е место из ${tot}`:""} 🏁`:`🎮 Sinf o‘yini · ${nm}\nNatijam: ${ok} / ${n}${pl?` · ${pl}-o‘rin (${tot} kishidan)`:""} 🏁`;
-  return gssHTML("kg",txt,miss.filter(m=>!m[2]).map(([q])=>({de:kgCor(q),q:String(q.q||"").replace(/\s+/g," ")})),"Sinf o‘yini"); }
+  return gssHTML("kg",txt,miss.filter(m=>!m[2]).map(([q])=>({de:kgCor(q),q:String(q.q||"").replace(/\s+/g," ")})),"Sinf o‘yini",{kg:1,kind:"🎮 Sinf o‘yini",title:nm,name:KGP.name,ok,n,place:pl,tot}); }
 /* savolma-savol: telefon — tugmalar, «qabul qilindi», natija, yakun */
 function kgpK(){ const c=KGP.ctl||{st:"lobby"}, el=kgpEl(), n=KGP.qs.length;
   if(KGP.st==="done"||c.st==="end") return kgpKEnd();
@@ -6270,7 +6311,8 @@ document.addEventListener("click",e=>{
   else if(a==="rclose") kgRepClose();
   else if(a==="csv"){ const R=(TP.kgR&&TP.kgR.R)||TP.k; if(R) kgCsv(R); }
   else if(a==="kshare"){ const R=(TP.kgR&&TP.kgR.R)||TP.k; if(R){ const L=kgRank(R), n=R.qs.length, md=["🥇","🥈","🥉"], Q=kgQStats(R).filter(x=>x.pct!=null).sort((a,b)=>a.pct-b.pct).slice(0,5);
-    gssShare(`🎮 Sinf o‘yini · ${R.g.nm}\n${new Date(R.g.t||Date.now()).toLocaleDateString("uz-UZ")} · ${L.length} o‘quvchi\n\n🏆 Natijalar:\n${L.slice(0,10).map((p,i)=>`${md[i]||(i+1)+"."} ${p.n} — ${p.ok}/${n}${p.cx?` 👀×${p.cx}`:""}`).join("\n")}${Q.length?`\n\n❌ Eng qiyin savollar:\n${Q.map(x=>`• ${String(x.q.q).replace(/\s+/g," ").slice(0,70)} → ${kgCor(x.q)} (${x.pct}%)`).join("\n")}`:""}`); } }
+    const IMG={kg:1,kind:"🎮 Sinf o‘yini",title:R.g.nm,rows:L.map(p=>[p.n+(p.cx?" 👀":""),`${p.ok}/${n}`]),miss:Q.map(x=>`${String(x.q.q).replace(/\s+/g," ").slice(0,26)} → ${kgCor(x.q)}`)};
+    gssShare(`🎮 Sinf o‘yini · ${R.g.nm}\n${new Date(R.g.t||Date.now()).toLocaleDateString("uz-UZ")} · ${L.length} o‘quvchi\n\n🏆 Natijalar:\n${L.slice(0,10).map((p,i)=>`${md[i]||(i+1)+"."} ${p.n} — ${p.ok}/${n}${p.cx?` 👀×${p.cx}`:""}`).join("\n")}${Q.length?`\n\n❌ Eng qiyin savollar:\n${Q.map(x=>`• ${String(x.q.q).replace(/\s+/g," ").slice(0,70)} → ${kgCor(x.q)} (${x.pct}%)`).join("\n")}`:""}`,IMG); } }
   else if(a==="hw") kgHw();
   else if(a==="copy"){ if(TP.k) kgCopy(kgLink(TP.k.id),b); }
   else if(a==="snd"){ const on=!kgSndOn(true); try{ localStorage.setItem("tch:kgsnd",on?"1":"0"); }catch(err){} b.textContent=on?"🔊":"🔇"; if(!on&&window.speechSynthesis) speechSynthesis.cancel(); }
