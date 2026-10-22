@@ -1391,7 +1391,7 @@ function render(){
     const rv = visibleMats(tab,"r");
     if(BT){ const rw=MATS.filter(m=>m.tab===tab&&m.key==="r"&&lernHas(m.id)), ru=state.lang==="ru";
       if(state.type==="all"&&(T0.lvl==="A1"||T0.lvl==="A2")) html += dcCardHTML(T0.lvl);
-      const aid=lrnAllId(T0.lvl,state.lang); if(aid&&(state.type==="all"||state.type==="w")) html += `<div class="review rv-top wz-all">${bAct("🧠","Wortschatz "+T0.lvl,ru?`Все слова ${T0.lvl} · уроки 1–24`:`${T0.lvl} ning hamma so‘zlari · 1–24-Lektion`,"",`data-lern="${aid}"`)}</div>`; else if(rw.length&&(state.type==="all"||state.type==="w")) html += `<div class="review rv-top"><h4>${t("whole")} · L${T0.lo}–${T0.hi}</h4><div class="sxg">${rw.map(m=>bAct("🧠",m.title,ru?"Учить слова":"So‘zlarni yodlash","",`data-lern="${m.id}"`)).join("")}</div></div>`; }
+      const aid=lrnAllId(T0.lvl,state.lang); if(aid&&(state.type==="all"||state.type==="w")) html += `<div class="review rv-top wz-all">${bAct("🧠","Wortschatz "+T0.lvl,ru?`Все слова ${T0.lvl} · уроки 1–24`:`${T0.lvl} ning hamma so‘zlari · 1–24-Lektion`,"",`data-lern="${aid}"`)}${mxGet().length?bAct("📝",ru?"Мои ошибки":"Xatolarim",ru?`${mxGet().length} слов из Live test и игр`:`Live test va o‘yinlardagi ${mxGet().length} ta xato`,"",`data-mxopen="1"`):""}</div>`; else if(rw.length&&(state.type==="all"||state.type==="w")) html += `<div class="review rv-top"><h4>${t("whole")} · L${T0.lo}–${T0.hi}</h4><div class="sxg">${rw.map(m=>bAct("🧠",m.title,ru?"Учить слова":"So‘zlarni yodlash","",`data-lern="${m.id}"`)).join("")}</div></div>`; }
     else if(rv.length) html += `<div class="review rv-top"><h4>${t("whole")} · L${T0.lo}–${T0.hi}</h4><div class="mats">${rv.map(matCard).join("")}</div></div>`;
     /* 🎓 Prüfungstraining — imtihon mashqlari (Goethe/telc Modellsatz) Modul takroridan ajratilib, alohida bo'limda (2026-10-21, Otabek) */
     if(BT&&state.type==="all"){ const pt=MATS.filter(m=>m.lvl===T0.lvl&&PT_RE.test(m.id)&&bOnline(m)), ru=state.lang==="ru";
@@ -1753,6 +1753,23 @@ const LT={
 const lt = k => LT[state.lang][k];
 const LR={id:null, sel:new Set(), redem:false, mode:null, pool:[], st:{}, round:[], qi:0, okN:0, qN:0, cur:null, answered:false, cards:[], flip:false};
 /* A2 o'zbekcha ro'yxatlar ruschalarning aynan nusxasi (indekslar bir xil) — progress bitta kalitda saqlanadi, til almashsa ham yo'qolmaydi (2026-10-22) */
+/* 📝 «Xatolarim» (2026-10-22, Otabek): Live test / Sinf o'yinidagi xatolar saqlanadi va Yodlash'da alohida ro'yxat bo'lib ochiladi */
+const MX_ID="MX-mx-u-Xatolarim";
+function mxGet(){ try{ return JSON.parse(localStorage.getItem("mx:v1")||"[]")||[]; }catch(e){ return []; } }
+function mxAdd(L,src){ const M=mxGet(), seen=new Set(M.map(x=>x.de)); let n=0; L.forEach(x=>{ const de=String(x.de||"").trim(), q=String(x.q||"").trim(); if(!de||!q||seen.has(de)) return; seen.add(de); M.push({de,q,s:src,t:Date.now()}); n++; });
+  try{ localStorage.setItem("mx:v1",JSON.stringify(M.slice(-400))); }catch(e){} mxSync(); try{ cloudDirty(); }catch(e){} return n; }
+function mxSync(){ const D=lernData(), M=mxGet(); if(!M.length){ delete D[MX_ID]; return null; } const uz=state.lang!=="ru";
+  D[MX_ID]={les:{"1":uz?"Xatolarim":"Мои ошибки"},sec:[uz?"O‘yinlardagi xatolar":"Ошибки из игр"],it:M.map(x=>[1,0,x.de,x.de,x.q,"",0]),title:uz?"📝 Xatolarim":"📝 Мои ошибки",lab:{"1":uz?"Xatolarim":"Мои ошибки"}}; return MX_ID; }
+function mxOpen(){ if(mxSync()) lrnOpen(MX_ID); }
+const GSS={};
+function gssHTML(key,txt,mx,src){ const ru=state.lang==="ru"; GSS[key]={txt,mx,src}; const sv=!!GSS[key].done;
+  return `<div class="lrn-card gss" data-gssk="${key}"><div class="gss-b"><button type="button" class="btn primary" data-gss="share">📤 ${ru?"Поделиться результатом":"Natijani ulashish"}</button>${mx&&mx.length?`<button type="button" class="btn" data-gss="save">💾 ${ru?`Сохранить ошибки (${mx.length})`:`Xatolarni saqlash (${mx.length})`}</button>`:""}</div><p class="ch-net gss-st"></p></div>`; }
+async function gssShare(txt){ const url=CH_SITE; try{ if(navigator.share){ await navigator.share({text:txt+"\n"+url}); return; } }catch(e){ if(e&&e.name==="AbortError") return; } window.open("https://t.me/share/url?url="+encodeURIComponent(url)+"&text="+encodeURIComponent(txt),"_blank","noopener"); }
+document.addEventListener("click",e=>{ if(e.target.closest("[data-mxopen]")){ mxOpen(); return; } });
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-gss]"); if(!b) return; const card=b.closest("[data-gssk]"), G=card&&GSS[card.dataset.gssk]; if(!G) return; const ru=state.lang==="ru", st=card.querySelector(".gss-st");
+  if(b.dataset.gss==="share"){ gssShare(G.txt); return; }
+  if(b.dataset.gss==="save"){ const n=mxAdd(G.mx,G.src); G.done=1; b.outerHTML=`<button type="button" class="btn" data-gss="learn">📝 ${ru?"Учить ошибки →":"Xatolarni yodlash →"}</button>`; if(st) st.textContent=ru?`✓ Сохранено: ${n} новых · всего в «Мои ошибки»: ${mxGet().length}`:`✓ Saqlandi: ${n} ta yangi · «Xatolarim»da jami ${mxGet().length} ta`; return; }
+  if(b.dataset.gss==="learn"){ try{ if(typeof ltpClose==="function"&&!document.getElementById("ltp")?.hidden) ltpClose(); }catch(err){} try{ const k=document.getElementById("kgp"); if(k&&!k.hidden){ k.hidden=true; document.body.style.overflow=""; } }catch(err){} mxOpen(); } });
 function lrnKey(id){ try{ const d=window.__LERN&&window.__LERN[id]; if(d&&d.alias) id=d.alias; }catch(e){} return "lern:"+id; }
 function lrnParts(id){ const d=lernData()[id]; return d&&d.parts||null; }
 function lrnGetMap(id,suf){ const P=lrnParts(id), rd=k=>{ try{ return JSON.parse(store.get(lrnKey(k)+suf)||"{}")||{}; }catch(e){ return {}; } }; if(!P) return rd(id);
@@ -4751,7 +4768,7 @@ function ltpSave(){ store.set("lt:"+LTP.id,JSON.stringify({tk:LTP.tk||0,n:LTP.na
 function ltpPub(force){ if(!LTP.mq||!LTP.name) return; const now=Date.now();
   if(!force && now-(LTP.pubT||0)<500){ clearTimeout(LTP.pubTm); LTP.pubTm=setTimeout(()=>ltpPub(true),500); return; } LTP.pubT=now;
   if(LTP.st==="play") LTP.ms=now-LTP.t0;
-  LTP.mq.pub(LT_NS+LTP.id+"/p/"+LTP.me, JSON.stringify({n:LTP.name,ok:LTP.ok,a:LTP.a,sk:LTP.sk,sr:LTP.sr|0,ms:LTP.ms||0,tk:LTP.tk||0,st:LTP.st,t:now}), true); }
+  LTP.mq.pub(LT_NS+LTP.id+"/p/"+LTP.me, JSON.stringify(Object.assign({n:LTP.name,ok:LTP.ok,a:LTP.a,sk:LTP.sk,sr:LTP.sr|0,ms:LTP.ms||0,tk:LTP.tk||0,st:LTP.st,t:now},LTP.st==="done"?{mw:LTP.qs.map((x,k)=>k).filter(k=>(LTP.best[k]||0)<1).slice(0,60)}:{})), true); }
 function ltOpen(code){
   let c=null; try{ c=JSON.parse(chB64d(code)); }catch(e){}
   const el=ltpEl(); el.hidden=false; document.body.style.overflow="hidden";
@@ -4873,6 +4890,9 @@ function ltpDone(){
   ltpEl().innerHTML=ltpHead()+`<div class="lrn-body"><div class="lrn-card lrn-end"><div class="big">🏁</div><h3>${esc(lz("done"))}</h3>
     <p class="ch-big"><b>✓ ${ltSc(LTP.ok)} / ${n}</b> · ⏱ ${ltFmt(LTP.ms)} · 💡 ${3-(LTP.hl??3)}/3</p><p class="ch-big" id="lt-place"></p></div>
     ${miss.length?`<div class="lrn-card"><h3>${esc(lz("mist"))} (${miss.length})</h3><ul class="lt-mis">${miss.map(o=>`<li><span>${esc(o.x.q)}</span><b>${artCol(o.x.de)}</b>${LTP.last[o.k]?`<s>${esc(LTP.last[o.k])}</s>`:""}${LTP.best[o.k]&&LTP.best[o.k]<1?`<em>≈ ${ltSc(LTP.best[o.k])}</em>`:""}</li>`).join("")}</ul></div>`:""}
+    ${(()=>{ const ru=(LTP.lang||state.lang)==="ru", P=Object.assign({},LTP.players); P[LTP.me]={n:LTP.name,ok:LTP.ok,ms:LTP.ms,tk:LTP.tk||0,st:"done"}; const R=ltRank(P), pl=R.findIndex(p=>p.id===LTP.me)+1;
+      const txt=ru?`🎯 Live test · ${ltTitle(LTP.c)}\nМой результат: ${ltSc(LTP.ok)} из ${n}${pl?` · ${pl}-е место из ${R.length}`:""} 🏁`:`🎯 Live test · ${ltTitle(LTP.c)}\nNatijam: ${ltSc(LTP.ok)} / ${n}${pl?` · ${pl}-o‘rin (${R.length} kishidan)`:""} 🏁`;
+      return gssHTML("lt",txt,miss.map(o=>({de:o.x.de,q:o.x.q})),"Live test"); })()}
     <div class="lrn-card"><h3>${esc(lz("board"))}</h3><div id="lt-board"></div></div></div>`;
   ltpBoard();
 }
@@ -5096,6 +5116,9 @@ function tpLt(){
     <div class="tp-row"><span>Vaqt</span><div class="tp-seg">${[[0,"Cheksiz"],[5,"5 daq"],[10,"10 daq"],[15,"15 daq"]].map(([v,t])=>`<button type="button" data-tptm="${v}" aria-pressed="${TP.tm===v}">${t}</button>`).join("")}</div></div>
     <p class="lrn-count">${avail} ta so‘z mavjud · testda ${Math.min(avail,TP.n)} ta · o‘quvchi faqat nemischa yozadi</p>
     <button type="button" class="btn primary" data-tp="create"${avail?"":" disabled"}>🎯 Testni yaratish va doskaga chiqarish</button></div>
+    ${tpLtReps().length?`<div class="lrn-card"><h3>💾 Saqlangan natijalar</h3>${tpLtReps().slice(0,15).map((R,i)=>`<details class="tp-rep"><summary><b>${esc(R.title)}</b> <small>${new Date(R.t).toLocaleString()} · ${R.pl.length} o‘quvchi</small></summary>
+      <ol class="tp-rep-l">${R.pl.map(p=>`<li>${esc(p[0])} <b>${ltSc(p[1])}/${R.n}</b></li>`).join("")}</ol>${R.mw.length?`<h4>❌ Ko‘p xato qilingan so‘zlar</h4><ul class="lt-mis">${R.mw.map(m=>`<li><span>${esc(m[1])}</span><b>${artCol(m[0])}</b><em>👥 ${m[2]}</em></li>`).join("")}</ul>`:""}
+      <div class="ch-btns"><button type="button" class="btn" data-tpltr="share" data-i="${i}">📤 Telegram’ga</button><button type="button" class="btn" data-tpltr="del" data-i="${i}">🗑</button></div></details>`).join("")}</div>`:""}
     ${games.length?`<div class="lrn-card"><h3>Oldingi testlar</h3><ul class="tp-games">${games.slice(0,6).map(g=>`<li><button type="button" class="lrn-link" data-tpgame="${esc(g.code)}">${esc(g.title)}</button><small>${new Date(g.t).toLocaleString()}</small></li>`).join("")}</ul></div>`:""}`;
 }
 function tpCreate(){
@@ -5111,8 +5134,8 @@ function tpBoardOpen(code,fresh){
   const id=chHash(code); TP.b={c,code,id,ctl:fresh?{st:"lobby",t:Date.now()}:null,players:{},n:ltQs(c).length};
   TP.b.mq=mqMulti(cl=>{ cl.subscribe(LT_NS+id+"/ctl",{qos:1}); cl.subscribe(LT_NS+id+"/p/+",{qos:1}); if(fresh&&TP.b&&TP.b.ctl) cl.publish(LT_NS+id+"/ctl",JSON.stringify(TP.b.ctl),{qos:1,retain:true}); tpBoardDraw(); },
     (t,m)=>{ const B=TP.b; if(!B) return; if(t.endsWith("/ctl")){ try{ const d=m?JSON.parse(m):null; if(d&&(!B.ctl||(d.t||0)>=(B.ctl.t||0))) B.ctl=d; }catch(e){} tpBoard(); return; }
-      const pid=t.split("/").pop(); if(!m) delete B.players[pid]; else { try{ const d=JSON.parse(m); if(d&&typeof d.ok==="number") B.players[pid]={n:String(d.n||"?").slice(0,40),ok:Math.max(0,Math.min(100,+d.ok||0)),a:d.a|0,sk:d.sk|0,sr:Math.min(99,d.sr|0),ms:d.ms|0,st:d.st,t:d.t||0}; }catch(e){} }
-      clearTimeout(B.dT); B.dT=setTimeout(tpBoardDraw,150); });
+      const pid=t.split("/").pop(); if(!m) delete B.players[pid]; else { try{ const d=JSON.parse(m); if(d&&typeof d.ok==="number") B.players[pid]={n:String(d.n||"?").slice(0,40),ok:Math.max(0,Math.min(100,+d.ok||0)),a:d.a|0,sk:d.sk|0,sr:Math.min(99,d.sr|0),ms:d.ms|0,st:d.st,t:d.t||0,mw:Array.isArray(d.mw)?d.mw.filter(x=>Number.isInteger(x)).slice(0,60):null}; }catch(e){} }
+      clearTimeout(B.dT); B.dT=setTimeout(()=>{ tpBoardDraw(); tpLtMwDraw(); },150); });
   clearInterval(TP.bT); TP.bT=setInterval(tpBoardTick,500); tpBoard();
 }
 function tpCtl(st){ const B=TP.b; if(!B) return; B.ctl={st,t:Date.now(),t0:st==="run"?Date.now():(B.ctl&&B.ctl.t0)||0}; B.mq.pub(LT_NS+B.id+"/ctl",JSON.stringify(B.ctl),true); tpBoard(); }
@@ -5127,10 +5150,18 @@ function tpBoard(){
       <p class="ch-net">${esc(B.n+" ta so‘z")}${B.c.tm?` · ${B.c.tm} daqiqa`:" · vaqt cheklanmagan"}</p>
       <div class="tp-feed" id="tp-feed"></div></aside>
     <section class="tp-lb"><div class="tp-lbh"><h2>${st==="end"?"🏆 G‘oliblar":st==="run"?"🔥 Jonli reyting":"👋 Qo‘shilganlar"}</h2><span id="tp-cnt"></span></div>
-      <div id="tp-pod"></div><div class="tp-toast" id="tp-toast"></div><ol id="tp-rows" class="tp-rows"></ol></section></div>`;
+      <div id="tp-pod"></div><div class="tp-toast" id="tp-toast"></div><ol id="tp-rows" class="tp-rows"></ol>
+      ${st==="end"?`<div class="tp-ltend"><div class="ch-btns"><button type="button" class="btn primary" data-tp="ltshare">📤 Natijalarni Telegram’ga</button><button type="button" class="btn" data-tp="ltsave">${B.saved?"✓ Saqlandi":"💾 Natijani saqlash"}</button></div><div id="tp-ltmw"></div></div>`:""}</section></div>`;
   B.prevPos=null; ltQr(url,"tp-qr"); tpBoardDraw(); tpBoardTick();
   if(st==="end" && !B.confetti){ B.confetti=1; setTimeout(ltConfetti,400); }
+  if(st==="end") tpLtMwDraw();
 }
+/* Live test yakuni: eng ko'p xato qilingan so'zlar, ulashish va saqlash (2026-10-22, Otabek) */
+function tpLtMiss(B){ const qs=ltQs(B.c), C={}; Object.values(B.players).forEach(p=>(p.mw||[]).forEach(k=>{ if(qs[k]) C[k]=(C[k]||0)+1; })); return Object.entries(C).sort((a,b)=>b[1]-a[1]).map(([k,c])=>[qs[k].de,qs[k].q,c]); }
+function tpLtRep(B){ return {t:Date.now(),title:ltTitle(B.c),n:B.n,pl:ltRank(B.players).map(p=>[p.n,p.ok,p.ms]),mw:tpLtMiss(B).slice(0,20)}; }
+function tpLtTxt(R){ const md=["🥇","🥈","🥉"]; return `🎯 Live test · ${R.title}\n${new Date(R.t).toLocaleDateString("uz-UZ")} · ${R.pl.length} o‘quvchi\n\n🏆 Natijalar:\n${R.pl.slice(0,10).map((p,i)=>`${md[i]||(i+1)+"."} ${p[0]} — ${ltSc(p[1])}/${R.n}`).join("\n")}${R.mw.length?`\n\n❌ Ko‘p xato qilingan so‘zlar:\n${R.mw.slice(0,8).map(m=>`• ${m[0]} — ${m[1]} (${m[2]})`).join("\n")}`:""}`; }
+function tpLtMwDraw(){ const B=TP.b, el=document.getElementById("tp-ltmw"); if(!B||!el) return; const M=tpLtMiss(B).slice(0,10); el.innerHTML=M.length?`<h3 class="tp-mwh">❌ Ko‘p xato qilingan so‘zlar</h3><ul class="lt-mis">${M.map(m=>`<li><span>${esc(m[1])}</span><b>${artCol(m[0])}</b><em>👥 ${m[2]}</em></li>`).join("")}</ul>`:""; }
+function tpLtReps(){ return kgLS("tch:ltreps",[]); }
 function tpFeed(txt){ const f=document.getElementById("tp-feed"), B=TP.b; if(!B) return; B.feed=[txt,...(B.feed||[])].slice(0,6);
   if(f) f.innerHTML=B.feed.map((t,i)=>`<div class="${i===0?"new":""}">${t}</div>`).join(""); }
 function tpToast(html){ const t=document.getElementById("tp-toast"); if(!t) return; t.innerHTML=html; t.classList.remove("show"); void t.offsetWidth; t.classList.add("show"); }
@@ -5664,6 +5695,7 @@ document.addEventListener("click",e=>{
   const vq=e.target.closest("[data-tpvq]"); if(vq){ TP.vqTab=vq.dataset.tpvq; tpVq(); return; }
   const vo=e.target.closest("#tch [data-open]"); if(vo){ V.el.classList.add("over"); openViewer(byId[vo.dataset.open]); return; }
   const vd=e.target.closest("#tch [data-dl]"); if(vd){ downloadMat(byId[vd.dataset.dl]); return; }
+  { const r=e.target.closest("#tch [data-tpltr]"); if(r){ const L=tpLtReps(), R=L[+r.dataset.i]; if(!R) return; if(r.dataset.tpltr==="share") gssShare(tpLtTxt(R)); else if(confirm("O‘chirilsinmi?")){ L.splice(+r.dataset.i,1); kgLSset("tch:ltreps",L); tpLt(); } return; } }
   const lt=e.target.closest("#tch [data-tplt]"); if(lt){ const k=lt.dataset.tplt, v=lt.dataset.v; if(k==="lv"){ TP.ltLv=v; TP.sel=new Set(); TP.ltH=1; } else if(k==="lang") TP.ltLang=v; else { TP.ltH=+v; TP.sel=new Set(); } tpLt(); return; }
   const ls=e.target.closest("[data-tples]"); if(ls){ const n=+ls.dataset.tples; TP.sel.has(n)?TP.sel.delete(n):TP.sel.add(n); tpLt(); return; }
   const tn=e.target.closest("[data-tpn]"); if(tn){ TP.n=+tn.dataset.tpn; tpLt(); return; }
@@ -5687,6 +5719,8 @@ document.addEventListener("click",e=>{
     else if(a==="create") tpCreate();
     else if(a==="start") tpCtl("run"); else if(a==="stop") tpCtl("end");
     else if(a==="again"){ if(TP.b&&TP.b.mq) TP.b.mq.end(); TP.b=null; clearInterval(TP.bT); TP.tab="lt"; tpRender(); }
+    else if(a==="ltshare"){ if(TP.b) gssShare(tpLtTxt(tpLtRep(TP.b))); }
+    else if(a==="ltsave"){ const B=TP.b; if(B){ const R=tpLtRep(B); R.code=B.code; const L=tpLtReps().filter(x=>x.code!==B.code); L.unshift(R); kgLSset("tch:ltreps",L.slice(0,40)); B.saved=1; t.textContent="✓ Saqlandi"; } }
     else if(a==="qrbig") tpQrBig(true); else if(a==="qrclose") tpQrBig(false);
     else if(a==="copy"){ const u=ltLink(TP.b.code); (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>{ t.textContent="✓ Nusxalandi"; }).catch(()=>{ prompt("",u); }); }
     return; }
@@ -5899,7 +5933,7 @@ function kgRunHTML(K){ return `<div class="kg-qhead"><span class="kg-qn">🏃 O�
     <ol class="tp-rows" id="kg-rows"></ol>`; }
 function kgEndHTML(K){ const L=kgRank(K), medal=["🥇","🥈","🥉"], P=[L[1],L[0],L[2]];
   return `${L[0]?`<div class="tp-podium kg-pod">${P.map((p,i)=>p?`<div class="pd pd${[2,1,3][i]}"><div class="pn">${esc(p.n)}</div><div class="ps">${p.ok} to‘g‘ri · ${kgTie(K,p)}</div><div class="pb">${medal[[1,0,2][i]]}</div></div>`:`<div class="pd pd${[2,1,3][i]} empty"></div>`).join("")}</div>`:""}
-    <div class="kg-ctl"><button type="button" class="btn primary" data-kg="rboard">📊 Hisobot — kim qayerda xato qildi</button><button type="button" class="btn" data-kg="csv">⬇ Excel</button></div>
+    <div class="kg-ctl"><button type="button" class="btn primary" data-kg="rboard">📊 Hisobot — kim qayerda xato qildi</button><button type="button" class="btn" data-kg="kshare">📤 Telegram’ga</button><button type="button" class="btn" data-kg="csv">⬇ Excel</button></div>
     <ol class="tp-rows" id="kg-rows"></ol>`; }
 /* 🚨 Doska «Cheater!» deb baqiradi (2026-10-22, Otabek) */
 function kgCheat(p){ try{ kgSnd("alarm",1); if(kgSndOn(true)) setTimeout(()=>kgSayTTS("Cheater! "+String(p.n).split(" ")[0]+"!"),350); }catch(e){}
@@ -6162,7 +6196,10 @@ function kgpMissHTML(L){ const ok=L.filter(x=>x[2]).length;
     return `<li class="${g?"ok":"bad"}"><span class="ic">${g?"✓":"✗"}</span><div><div class="q"><small>${i+1}.</small> <span lang="de">${esc(q.q)}</span></div><div class="a">${g?`<b lang="de">${esc(kgVal(q,a[0]))}</b>`:`${has?(!q.o&&gmDiff(String(a[0]),String(q.a||""))?`<span class="gm-df" lang="de">${gmDiff(String(a[0]),String(q.a||""))}</span>`:`<s lang="de">${esc(kgVal(q,a[0]))}</s>`):`<em>—</em>`} <b lang="de">→ ${esc(kgCor(q))}</b>`}</div></div></li>`; }).join("")}</ol></div>`; }
 function kgpDone(){ const n=KGP.qs.length, me=kgpStat(KGP.a), miss=KGP.qs.map((q,i)=>{ const x=KGP.a[i]; return [q,x,!!x&&kgJudge(q,x[0])]; });
   kgpEl().innerHTML=kgpHead()+`<div class="lrn-body"><div class="lrn-card lrn-end"><div class="big">🏁</div><h3>${esc(kz("done"))}</h3><p class="ch-big"><b>${esc(kz("score")(me.ok,n))}</b> · ⏱ ${ltFmt(me.tie)}</p><p class="ch-big" id="kg-place"></p></div>
-    ${kgpMissHTML(miss)}<div class="lrn-card"><h3>${esc(kz("board"))}</h3><div id="kg-board"></div></div></div>`; kgpBoard(); }
+    ${kgpGss(me.ok,n,miss)}${kgpMissHTML(miss)}<div class="lrn-card"><h3>${esc(kz("board"))}</h3><div id="kg-board"></div></div></div>`; kgpBoard(); }
+function kgpGss(ok,n,miss,pl,tot){ const ru=state.lang==="ru", nm=(KGP.g&&KGP.g.nm)||"";
+  const txt=ru?`🎮 Игра в классе · ${nm}\nМой результат: ${ok} из ${n}${pl?` · ${pl}-е место из ${tot}`:""} 🏁`:`🎮 Sinf o‘yini · ${nm}\nNatijam: ${ok} / ${n}${pl?` · ${pl}-o‘rin (${tot} kishidan)`:""} 🏁`;
+  return gssHTML("kg",txt,miss.filter(m=>!m[2]).map(([q])=>({de:kgCor(q),q:String(q.q||"").replace(/\s+/g," ")})),"Sinf o‘yini"); }
 /* savolma-savol: telefon — tugmalar, «qabul qilindi», natija, yakun */
 function kgpK(){ const c=KGP.ctl||{st:"lobby"}, el=kgpEl(), n=KGP.qs.length;
   if(KGP.st==="done"||c.st==="end") return kgpKEnd();
@@ -6183,7 +6220,7 @@ function kgpK(){ const c=KGP.ctl||{st:"lobby"}, el=kgpEl(), n=KGP.qs.length;
 function kgpKEnd(){ const c=KGP.ctl||{}, n=KGP.qs.length, rk=Array.isArray(c.rk)?c.rk:[], pi=rk.findIndex(r=>r&&r[0]===KGP.me), cs=Array.isArray(c.cs)?c.cs:null;
   const miss=cs? KGP.qs.map((q,i)=>{ const qq=Object.assign({},q,q.o?{c:Array.isArray(cs[i])?cs[i]:[]}:{a:String(cs[i]||"")}), x=KGP.a[i]; return [qq,x,!!x&&kgJudge(qq,x[0])]; }) : [];
   kgpEl().innerHTML=kgpHead()+`<div class="lrn-body"><div class="lrn-card lrn-end"><div class="big">${pi===0?"🏆":pi===1?"🥈":pi===2?"🥉":"🏁"}</div><h3>${esc(kz("done"))}</h3>
-    ${pi>=0?`<p class="ch-big"><b>${esc(kz("score")(rk[pi][1],n))}</b></p><p class="ch-big">🏅 ${esc(kz("place")(pi+1,rk.length))}</p>`:""}</div>${cs?kgpMissHTML(miss):""}</div>`;
+    ${pi>=0?`<p class="ch-big"><b>${esc(kz("score")(rk[pi][1],n))}</b></p><p class="ch-big">🏅 ${esc(kz("place")(pi+1,rk.length))}</p>`:""}</div>${pi>=0?kgpGss(rk[pi][1],n,cs?miss:[],pi+1,rk.length):""}${cs?kgpMissHTML(miss):""}</div>`;
   if(!KGP.endFx&&pi>=0){ KGP.endFx=1; if(pi<3){ setTimeout(()=>{ kgSnd("fan",0); ltConfetti(); },400); } } }
 function kgpTick(){ kgpNet(); if(!KGP.g||!KGP.qs) return; const now=Date.now(), t=document.getElementById("kg-time");
   if(KGP.g.m==="s"&&KGP.st==="play"){ const c=KGP.ctl, dl=KGP.g.tm&&c&&c.t0&&!KGP.solo?c.t0+KGP.g.tm*60000:0; if(t) t.textContent=dl?ltFmt(dl-now):ltFmt(now-KGP.t0); if(dl&&now>=dl) return kgpFinish();
@@ -6226,6 +6263,8 @@ document.addEventListener("click",e=>{
   else if(a==="rboard"){ if(TP.k) kgRepOpen(TP.k,true); }
   else if(a==="rclose") kgRepClose();
   else if(a==="csv"){ const R=(TP.kgR&&TP.kgR.R)||TP.k; if(R) kgCsv(R); }
+  else if(a==="kshare"){ const R=(TP.kgR&&TP.kgR.R)||TP.k; if(R){ const L=kgRank(R), n=R.qs.length, md=["🥇","🥈","🥉"], Q=kgQStats(R).filter(x=>x.pct!=null).sort((a,b)=>a.pct-b.pct).slice(0,5);
+    gssShare(`🎮 Sinf o‘yini · ${R.g.nm}\n${new Date(R.g.t||Date.now()).toLocaleDateString("uz-UZ")} · ${L.length} o‘quvchi\n\n🏆 Natijalar:\n${L.slice(0,10).map((p,i)=>`${md[i]||(i+1)+"."} ${p.n} — ${p.ok}/${n}${p.cx?` 👀×${p.cx}`:""}`).join("\n")}${Q.length?`\n\n❌ Eng qiyin savollar:\n${Q.map(x=>`• ${String(x.q.q).replace(/\s+/g," ").slice(0,70)} → ${kgCor(x.q)} (${x.pct}%)`).join("\n")}`:""}`); } }
   else if(a==="hw") kgHw();
   else if(a==="copy"){ if(TP.k) kgCopy(kgLink(TP.k.id),b); }
   else if(a==="snd"){ const on=!kgSndOn(true); try{ localStorage.setItem("tch:kgsnd",on?"1":"0"); }catch(err){} b.textContent=on?"🔊":"🔇"; if(!on&&window.speechSynthesis) speechSynthesis.cancel(); }
