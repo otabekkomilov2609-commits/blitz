@@ -5850,12 +5850,15 @@ function kgSetup(b){ const s=kgSets().find(x=>x.id===TP.kgGo); if(!s){ TP.kgGo=n
       :`<div class="tp-row"><span>Har savolga</span><div class="tp-seg">${(P.qs.every(q=>q.tm)?[[-1,"Savoldagi vaqt"]]:[]).concat([[0,"Cheksiz"],[10,"10 s"],[20,"20 s"],[30,"30 s"],[60,"60 s"]]).map(([v,t])=>`<button type="button" data-kgqt="${v}" aria-pressed="${kgQtDef(P)===v}">${t}</button>`).join("")}</div></div>
       ${kgQtDef(P)===-1?`<p class="ch-net">⏱ Har savolning o‘z vaqti (${Math.min(...P.qs.map(q=>q.tm))}–${Math.max(...P.qs.map(q=>q.tm))} s). Vaqt tugasa — savol xato hisoblanib, keyingisi chiqadi.</p>`:kgQtDef(P)>0?`<p class="ch-net">⏱ Vaqt tugasa — savol xato hisoblanib, keyingisi chiqadi.</p>`:""}
       <div class="tp-row"><span>Umumiy vaqt</span><div class="tp-seg">${[[0,"Cheksiz"],[5,"5 daq"],[10,"10 daq"],[15,"15 daq"],[20,"20 daq"]].map(([v,t])=>`<button type="button" data-kgtot="${v}" aria-pressed="${(TP.kgTot||0)===v}">${t}</button>`).join("")}</div></div>`}
+    ${M==="k"?`<div class="tp-row"><span>🤖 Avto-o‘yin</span><div class="tp-seg">${[[0,"O‘chiq"],[5,"5 s"],[8,"8 s"],[12,"12 s"]].map(([v,t])=>`<button type="button" data-kgauto="${v}" aria-pressed="${kgAutoDef()===v}">${t}</button>`).join("")}</div></div><p class="ch-net">${kgAutoDef()?`Javob ko‘rsatilgach ${kgAutoDef()} soniyadan so‘ng keyingi savol o‘zi chiqadi, oxirida natijalar ham o‘zi ochiladi. O‘yin paytida ⏸ bilan to‘xtatish mumkin.`:"Keyingi savolga o‘zingiz o‘tkazasiz."}</p>`:""}
     <div class="ch-btns"><button type="button" class="btn" data-kg="cancel">← Orqaga</button><button type="button" class="btn primary" data-kg="launch">🎮 Doskaga chiqarish</button></div></div>`; }
+/* 🤖 Avto-o'yin (2026-10-22, Otabek): Savolma-savol rejimida javob ko'rsatilgach N s dan keyin keyingi savol o'zi; oxirgisidan keyin — natijalar */
+function kgAutoDef(){ const v=kgLS("tch:kgauto",0); return [0,5,8,12].includes(+v)?+v:0; }
 function kgQtDef(P){ const v=TP.kgQt; if(v==null) return P.qs.every(q=>q.tm)?-1:20; if(v===-1&&!P.qs.every(q=>q.tm)) return 20; return v; }
 function kgLaunch(){ const s=kgSets().find(x=>x.id===TP.kgGo); if(!s) return; const P=kgParse(s.txt); if(!P.qs.length) return;
   const r=chRng(Math.floor(Math.random()*2147483647));
   const qs=P.qs.map(q=>{ if(!q.o||q.o.length<3||s.f) return q; /* Kahoot to'plamlari: variantlar asl tartibda */ const ix=chShuf(q.o.map((_,i)=>i),r); return Object.assign({},q,{o:ix.map(i=>q.o[i]),c:q.c.map(ci=>ix.indexOf(ci))}); });
-  const M=TP.kgM||"k", g={id:kgId(),m:M,nm:s.name,tm:M==="k"?(TP.kgT||20):(TP.kgTot||0),n:qs.length,t:Date.now()}; if(M==="s") g.qt=kgQtDef(P);
+  const M=TP.kgM||"k", g={id:kgId(),m:M,nm:s.name,tm:M==="k"?(TP.kgT||20):(TP.kgTot||0),n:qs.length,t:Date.now(),au:M==="k"?kgAutoDef():0}; if(M==="s") g.qt=kgQtDef(P);
   TP.kgGo=null; kgBoardOpen({g,qs,players:{},fz:{},ctl:{st:"lobby",t:Date.now()}}); }
 
 /* ---------- Doska (proyektor) ---------- */
@@ -5889,7 +5892,7 @@ function kgQHTML(K){ const i=K.ctl.i, q=K.qs[i], rev=K.ctl.st==="rev", n=K.qs.le
     <div class="kg-qtext" lang="de">${kgQtx(q.q)}</div>
     ${q.o?`<div class="kg-opts">${q.o.map((o,k)=>`<div class="kg-o${rev?(q.c.includes(k)?" ok":" no"):""}" style="--c:${KG_COL[k][0]}"><i>${KG_COL[k][1]}</i><span lang="de">${esc(o)}</span>${rev?`<em>${cnt[k]}</em>`:""}</div>`).join("")}</div>`
       :`<div class="kg-typed">${rev?`<div class="kg-o ok" style="--c:#26890C"><i>✓</i><span lang="de">${esc(q.a)}</span></div>${Object.keys(wr).length?`<div class="kg-wr">Xato yozilganlar: ${Object.entries(wr).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([w,c])=>`<s lang="de">${esc(w)}</s> ×${c}`).join(" · ")}</div>`:""}`:`<div class="kg-wbox">✍️ Javobni telefonda nemischa yozing</div>`}</div>`}
-    <div class="kg-ctl">${rev?(i+1<n?`<button type="button" class="btn primary" data-kg="next">Keyingi savol →</button>`:`<button type="button" class="btn primary" data-kg="fin">🏁 Yakuniy natijalar</button>`):`<button type="button" class="btn" data-kg="reveal">⏭ Javobni ko‘rsatish</button>`}</div>
+    <div class="kg-ctl">${K.g.au?`<button type="button" class="btn kg-autob" data-kg="auto" title="Avto-o‘yin">${K.auP?"▶ Avto":"⏸ Avto"}</button>`:""}${rev?(i+1<n?`<button type="button" class="btn primary" data-kg="next">Keyingi savol →<b class="kg-autoc" id="kg-autoc"></b></button>`:`<button type="button" class="btn primary" data-kg="fin">🏁 Yakuniy natijalar<b class="kg-autoc" id="kg-autoc"></b></button>`):`<button type="button" class="btn" data-kg="reveal">⏭ Javobni ko‘rsatish</button>`}</div>
     ${rev?`<div class="kg-box"><h2 class="kg-h2">🏆 Top 5</h2><ol class="tp-rows" id="kg-rows"></ol></div>`:""}`; }
 function kgRunHTML(K){ return `<div class="kg-qhead"><span class="kg-qn">🏃 O‘z tempida · ${K.qs.length} savol</span><span class="kg-clock wide" id="kg-clock"></span><span class="kg-ansn" id="kg-cnt2"></span></div>
     <div class="kg-ctl"><button type="button" class="btn" data-tp="qrbig">📱 QR-kod</button><button type="button" class="btn tp-stop" data-kg="fin">⏹ Tugatish</button></div>
@@ -5917,6 +5920,9 @@ function kgTick(){ const K=TP.k; if(!K) return; const st=K.ctl.st, now=Date.now(
     if(c&&!TP.kgR){ c.textContent=Math.max(0,Math.ceil(left/1000)); c.classList.toggle("hurry",left<5000); } const sec=Math.ceil(left/1000); if(sec>0&&sec<=5&&K.tickS!==K.ctl.i+":"+sec){ K.tickS=K.ctl.i+":"+sec; kgSnd("tick",1); }
     const P=Object.values(K.players).filter(p=>p&&p.n), all=P.length>0&&P.every(p=>p.a&&p.a[K.ctl.i]);
     if(left<-700) kgReveal(); else if(all&&!K.allT){ K.allT=setTimeout(()=>{ K.allT=0; if(TP.k===K&&K.ctl.st==="q") kgReveal(); },800); } }
+  if(K.g.m==="k"&&st==="rev"&&K.g.au){ const ac=document.getElementById("kg-autoc");
+    if(K.auP||TP.kgR){ if(ac) ac.textContent=""; } else { const left=K.ctl.t+K.g.au*1000-now; if(ac) ac.textContent=" · "+Math.max(0,Math.ceil(left/1000));
+      if(left<=0&&K.auI!==K.ctl.i){ K.auI=K.ctl.i; (K.ctl.i|0)+1<K.qs.length? kgNext() : kgFinish(); return; } } }
   if(K.g.m==="s"&&st==="run"){ const c=document.getElementById("kg-clock"), dl=K.g.tm?K.ctl.t0+K.g.tm*60000:0;
     if(c&&!TP.kgR){ c.textContent=dl?ltFmt(dl-now):ltFmt(now-K.ctl.t0); c.classList.toggle("hurry",!!dl&&dl-now<30000); }
     const P=Object.values(K.players).filter(p=>p&&p.n);
@@ -6184,6 +6190,7 @@ document.addEventListener("click",e=>{
   const pp=e.target.closest("[data-kgp]"); if(pp){ const a=pp.dataset.kgp; if(a==="snd"){ const on=!kgSndOn(false); try{ localStorage.setItem("kgpsnd",on?"1":"0"); }catch(err){} pp.textContent=on?"🔊":"🔇"; return; } if(a==="close") kgpClose(); else if(a==="join") kgpJoin(); else if(a==="dunno") kgpAns(""); return; }
   const cp=e.target.closest("[data-kgcopy]"); if(cp){ kgCopy(cp.dataset.kgcopy,cp); return; }
   const m=e.target.closest("[data-kgm]"); if(m){ TP.kgM=m.dataset.kgm; kgPanel(); return; }
+  const au=e.target.closest("[data-kgauto]"); if(au){ kgLSset("tch:kgauto",+au.dataset.kgauto); kgPanel(); return; }
   const t1=e.target.closest("[data-kgt]"); if(t1){ TP.kgT=+t1.dataset.kgt; kgPanel(); return; }
   const t2=e.target.closest("[data-kgtot]"); if(t2){ TP.kgTot=+t2.dataset.kgtot; kgPanel(); return; }
   const t3=e.target.closest("[data-kgqt]"); if(t3){ TP.kgQt=+t3.dataset.kgqt; kgPanel(); return; }
@@ -6202,7 +6209,7 @@ document.addEventListener("click",e=>{
   else if(a==="resume"){ const R=TP.kgR&&TP.kgR.R; if(R){ if(TP.kgR.mq) TP.kgR.mq.end(); TP.kgR=null; kgBoardOpen(R); } }
   else if(a==="bback"){ const K=TP.k; if(K&&K.ctl.st!=="end"&&K.ctl.st!=="lobby"&&!confirm("O‘yindan chiqilsinmi? O‘yin «Hisobotlar»da saqlanadi — u yerdan davom ettirish mumkin.")) return; tpQrBig(false); kgBEnd(); TP.tab="kg"; tpRender(); }
   else if(a==="start"){ if(TP.k) TP.k.g.m==="k"? kgNext() : kgCtl({st:"run",t0:Date.now()}); }
-  else if(a==="reveal") kgReveal(); else if(a==="next") kgNext(); else if(a==="fin") kgFinish();
+  else if(a==="reveal") kgReveal(); else if(a==="next") kgNext(); else if(a==="fin") kgFinish(); else if(a==="auto"){ const K=TP.k; if(K){ K.auP=!K.auP; if(!K.auP&&K.ctl.st==="rev") K.ctl.t=Date.now(); kgBoard(); } }
   else if(a==="rboard"){ if(TP.k) kgRepOpen(TP.k,true); }
   else if(a==="rclose") kgRepClose();
   else if(a==="csv"){ const R=(TP.kgR&&TP.kgR.R)||TP.k; if(R) kgCsv(R); }
