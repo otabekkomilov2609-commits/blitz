@@ -5686,6 +5686,14 @@ async function fbSend(){ const st=document.getElementById("fb-st"), tx=(document
     document.querySelector("#fb-ov .fb-box").innerHTML=`<div class="fb-thx"><div class="big">🙏</div><p>${esc(fbT("ok"))}</p><button type="button" class="btn primary" data-fb="x">OK</button></div>`;
   }catch(e){ st.className="fb-st err"; st.textContent=fbT("err"); document.querySelectorAll("#fb-ov [data-fb]").forEach(b=>b.disabled=false); } }
 function fbClose(){ const o=document.getElementById("fb-ov"); if(o){ o.hidden=true; o.innerHTML=""; } }
+/* 👎 tugmasi nima ekanini bir marta tushuntirish — yangi va eski hamma foydalanuvchiga keyingi kirishda (2026-10-22, Otabek) */
+function fbTip(){ try{ if(IN_ARTIFACT||window.BLITZ||localStorage.getItem("fbtip")) return; }catch(e){ return; } const b=document.getElementById("fb-btn"); if(!b||b.hidden) return;
+  if(document.querySelector(".lrn:not([hidden]),.viewer:not([hidden]),.snd:not([hidden]),#tch:not([hidden]),.app-ask:not([hidden])")||[...document.querySelectorAll('[aria-modal="true"],[role="dialog"]')].some(x=>!x.hidden&&x.getClientRects().length>0&&getComputedStyle(x).display!=="none")){ setTimeout(fbTip,15000); return; }
+  const ru=state.lang==="ru", r=b.getBoundingClientRect(), right=b.classList.contains("r"); let t=document.getElementById("fb-tip"); if(!t){ t=document.createElement("div"); t.id="fb-tip"; t.className="fb-tip"; document.body.appendChild(t); }
+  t.classList.toggle("r",right); t.innerHTML=`<b>👎 ${ru?"Нашли ошибку?":"Xato topdingizmi?"}</b><p>${ru?"Если что-то не работает или ответ засчитан неверно — нажмите 👎. Сайт сам сделает снимок экрана, напишите пару слов — я исправлю.":"Biror narsa ishlamasa yoki to‘g‘ri javobni xato desa — shu 👎 tugmani bosing. Sayt ekran rasmini o‘zi oladi, ikki og‘iz yozasiz — men tuzataman."}</p><p class="fb-tip-s">${ru?"Кнопку можно перетащить вверх или вниз.":"Tugmani yuqoriga-pastga surib qo‘yish mumkin."}</p><button type="button" class="btn primary" data-fbtip>${ru?"Понятно ✓":"Tushunarli ✓"}</button>`;
+  t.style.top=Math.max(12,Math.min(innerHeight-260,r.top+r.height/2-80))+"px"; t.hidden=false; b.classList.add("fb-pulse"); try{ localStorage.setItem("fbtip","1"); }catch(e){} }
+setTimeout(fbTip,9000);
+document.addEventListener("click",e=>{ if(e.target.closest("[data-fbtip]")||e.target.closest("#fb-btn")){ const t=document.getElementById("fb-tip"); if(t) t.hidden=true; const b=document.getElementById("fb-btn"); if(b) b.classList.remove("fb-pulse"); } });
 (function(){ if(IN_ARTIFACT) return; const b=document.createElement("button"); b.type="button"; b.id="fb-btn"; b.className="fb-btn"; b.setAttribute("aria-label","👎 "+fbT("btn")); b.title=fbT("btn"); b.textContent="👎"; document.body.appendChild(b); })();
 document.addEventListener("click",e=>{ if(e.target.closest("#fb-btn")){ fbOpen(); return; }
   const c=e.target.closest("[data-fbc]"); if(c){ c.classList.toggle("on"); return; }
