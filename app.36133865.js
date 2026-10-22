@@ -3271,12 +3271,12 @@ function lrnJudge(inp, x){
   if(vs.some(v=>nsp(v)===nsp(u))) return {ok:true};
   { const cv=vs.find(v=>nsp(v).toLowerCase()===nsp(u).toLowerCase()); if(cv) return {ok:true, fix:cv}; } /* faqat harf kattaligi — to'g'ri, kanonik shakl ko'rsatiladi (2026-10-20, Otabek) */
   if(vs.some(v=>/^(der|die|das) /.test(v) && v.replace(/^(der|die|das) /,"").toLowerCase()===u.toLowerCase())) return {ok:false, note:lt("artNote"), close:true};
+  { const va=vs.find(v=>/^(der|die|das) /.test(v) && /^(der|die|das) /i.test(u) && v.slice(4).toLowerCase()===u.slice(4).toLowerCase());
+    if(va) return {ok:false, note:lt("artWrong"), close:true, art:{bad:u.slice(0,3), ok:va.slice(0,3), rest:u.slice(3)}}; } /* faqat artikl xato — artikl silkinadi (2026-10-19); harf xatolaridan oldin tekshiriladi (2026-10-22) */
   const fold=s=>s.toLowerCase().replace(/ä/g,"a").replace(/ö/g,"o").replace(/ü/g,"u").replace(/ß/g,"ss").replace(/ae/g,"a").replace(/oe/g,"o").replace(/ue/g,"u");
   if(vs.some(v=>fold(v)===fold(u))) return {ok:false, note:lt("umlNote"), close:true};
   if(vs.some(v=>v.length>3 && lrnLev(v.toLowerCase(),u.toLowerCase())===1)) return {ok:false, note:lt("almost"), close:true};
   if(vs.some(v=>v.length>6 && lrnLev(v.toLowerCase(),u.toLowerCase())===2)) return {ok:false, note:lt("near"), close:true}; /* 2 harf xato — ham ishora (2026-10-19) */
-  { const va=vs.find(v=>/^(der|die|das) /.test(v) && /^(der|die|das) /i.test(u) && v.slice(4).toLowerCase()===u.slice(4).toLowerCase());
-    if(va) return {ok:false, note:lt("artWrong"), close:true, art:{bad:u.slice(0,3), ok:va.slice(0,3), rest:u.slice(3)}}; } /* faqat artikl xato — artikl silkinadi (2026-10-19) */
   return {ok:false};
 }
 function lrnHintMark(i, v, x, j, quiet){ const w=document.getElementById("lrn-inw"), ov=document.getElementById("lrn-ov"); if(!w||!ov) return;
@@ -4794,7 +4794,7 @@ function ltpQ(){
     <div class="lrn-card"><div class="ch-q">${esc(x.q)}</div><div class="lrn-ask">${esc(lz("write"))}${LTP.best[k]===.5?` · <span class="lt-half">≈ 0,5</span>`:""}</div>
       ${LTP.hw[k]?`<div class="lt-mask" lang="de">${esc(ltpMask(x.de))}</div>`:""}
       <form class="lrn-wr" id="lt-wr" autocomplete="off"><div class="lrn-inw" id="lt-inw"><input id="lt-in" lang="de" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="${esc(lz("ph"))}"><div class="lrn-ov" id="lt-ov" aria-hidden="true"></div></div>
-      ${umKeys("data-ltk")}
+      <div class="lt-kh">${umKeys("data-ltk")}
         <button type="button" class="lt-help" data-lt="help"${LTP.hl>0&&!LTP.hw[k]?"":" disabled"}>${esc(LTP.hl>0?lz("help")(LTP.hl):lz("helpNo"))}</button></div>
       ${noun?`<div class="lrn-hint">💡 ${esc(lz("art"))}</div>`:""}
       <div class="lt-nav"><button type="button" class="lrn-link" data-lt="back"${LTP.q.length>1?"":" disabled"}>${esc(lz("back"))}</button><button type="button" class="lrn-link lt-dn" data-lt="dunno">${esc(lz("dunno"))}</button><button type="button" class="lrn-link" data-lt="skip"${LTP.q.length>1?"":" disabled"}>${esc(lz("skip"))}</button></div>
@@ -4805,7 +4805,7 @@ function ltpQ(){
   ltpTick(); ltpBoard(); setTimeout(()=>{ const i=document.getElementById("lt-in"); if(i) i.focus(); },30);
   /* to'g'ri yozilishi bilan — «Tekshirish»siz keyingisiga (2026-10-18) */
   const inp=document.getElementById("lt-in"); if(inp) inp.addEventListener("input",()=>{ clearTimeout(LTP.autoT); gmMarkClear("lt"); const kk=LTP.q[0], xx=LTP.qs[kk];
-    LTP.autoT=setTimeout(()=>{ if(LTP.st!=="play"||LTP.lock||LTP.q[0]!==kk||!inp.isConnected) return; if(lrnJudge(inp.value,xx).ok) ltpAnswer(false); },350); });
+    i0rm(inp); LTP.autoT=setTimeout(()=>{ if(LTP.st!=="play"||LTP.lock||LTP.q[0]!==kk||!inp.isConnected) return; if(lrnJudge(inp.value,xx).ok) ltpAnswer(false); },350); });
 }
 /* «Bilmayman»: to'g'ri javob ko'rsatiladi, so'z 0 ball bilan o'tadi (qaytmaydi). «← Orqaga»: oxirgi o'tkazib yuborilgan so'zga qaytadi. */
 function ltpDunno(){ if(LTP.st!=="play"||LTP.lock) return; const k=LTP.q[0], x=LTP.qs[k], i=document.getElementById("lt-in");
@@ -4815,6 +4815,7 @@ function ltpDunno(){ if(LTP.st!=="play"||LTP.lock) return; const k=LTP.q[0], x=L
 function ltpBack(){ if(LTP.st!=="play"||LTP.lock||LTP.q.length<2) return; clearTimeout(LTP.autoT); LTP.q.unshift(LTP.q.pop()); ltpSave(); ltpQ(); }
 function ltpHelp(){ if(LTP.st!=="play"||LTP.lock||LTP.hl<=0) return; const k=LTP.q[0]; if(LTP.hw[k]) return;
   LTP.hl--; LTP.hw[k]=1; ltpSave(); const v=document.getElementById("lt-in"), val=v?v.value:""; ltpQ(); const i=document.getElementById("lt-in"); if(i){ i.value=val; } }
+function i0rm(i){ if(i) i.classList.remove("lt-bad","lt-near"); }
 function ltpAnswer(skip){
   if(LTP.st!=="play"||LTP.lock) return; const k=LTP.q[0], x=LTP.qs[k], i=document.getElementById("lt-in"), v=i?i.value:"";
   if(!skip && !lrnNorm(v)){ if(i) i.focus(); return; }
@@ -4825,9 +4826,12 @@ function ltpAnswer(skip){
     if(near) LTP.best[k]=Math.max(LTP.best[k]||0,.5);
     LTP.ok=ltpScore(); ltpSave(); ltpPub(false);
     const fb=document.getElementById("lt-fb");
-    if(fb){ if(near){ fb.className="lrn-fb near"; fb.innerHTML=`<div class="lrn-v">≈ ${esc(lz("near"))} +0,5</div>${j.note?`<div class="lrn-note">${esc(j.note)}</div>`:""}`; } else { fb.className="lrn-fb"; fb.innerHTML=""; } }
+    const ru=(LTP.lang||state.lang)==="ru";
+    if(fb){ if(j.art){ fb.className="lrn-fb bad"; fb.innerHTML=`<div class="lrn-v">✗ ${ru?"Неверный артикль":"Artikel xato"} · +0,5</div><div class="lrn-note">${ru?"Не":"Emas"} <s>${esc(j.art.bad)}</s> — ${ru?"проверьте артикль":"artiklni tekshiring"}</div>`; }
+      else if(near){ fb.className="lrn-fb near"; fb.innerHTML=`<div class="lrn-v">≈ ${esc(lz("near"))} +0,5</div>${j.note?`<div class="lrn-note">${esc(j.note)}</div>`:""}`; }
+      else { fb.className="lrn-fb bad"; fb.innerHTML=`<div class="lrn-v">✗ ${ru?"Неверно — попробуйте ещё раз":"Xato — yana urinib ko‘ring"}</div>`; } }
     const sc=document.querySelector(".ch-score"); if(sc) sc.textContent=`✓ ${ltSc(LTP.ok)} / ${LTP.qs.length} · ${lz("left")(LTP.q.length)}`;
-    if(i){ i.classList.remove("lt-shake","lt-near"); void i.offsetWidth; i.classList.add("lt-shake"); if(near) i.classList.add("lt-near"); i.focus(); if(!gmMark("lt",v,x.de,j)) i.select(); }
+    if(i){ i.classList.remove("lt-shake","lt-near","lt-bad"); void i.offsetWidth; i.classList.add("lt-shake"); i.classList.add(near&&!j.art?"lt-near":"lt-bad"); i.focus(); if(!gmMark("lt",v,x.de,j)) i.select(); }
     if(navigator.vibrate) try{ navigator.vibrate(near?60:[40,40,40]); }catch(err){}
     return; }
   LTP.lock=true; if(i) i.disabled=true;
