@@ -1,7 +1,7 @@
 {
-  "name": "by Otabek Komilov",
-  "short_name": "Streber",
-  "description": "Nemis tili: Lektionlar, mashqlar, so‘z yodlash, Hören va Sprechen.",
+  "name": "Blitz · Deutsch",
+  "short_name": "Blitz",
+  "description": "Blitz til markazi — dars materiallari va o‘yinlar",
   "lang": "uz",
   "id": "/",
   "start_url": "/?app=1",
@@ -15,22 +15,16 @@
   ],
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "/icons/blitz-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/icons/blitz-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-maskable-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
     }
   ],
   "related_applications": [
