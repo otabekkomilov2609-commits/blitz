@@ -1769,7 +1769,7 @@ function mxSync(){ const D=lernData(), M=mxGet(); if(!M.length){ delete D[MX_ID]
 function mxOpen(){ if(mxSync()) lrnOpen(MX_ID); }
 const GSS={};
 function gssHTML(key,txt,mx,src,o){ const ru=state.lang==="ru"; GSS[key]={txt,mx,src,o}; const sv=!!GSS[key].done;
-  return `<div class="lrn-card gss" data-gssk="${key}"><div class="gss-b"><button type="button" class="btn primary" data-gss="share">📤 ${ru?"Поделиться результатом":"Natijani ulashish"}</button>${mx&&mx.length?`<button type="button" class="btn" data-gss="save">💾 ${ru?`Сохранить ошибки (${mx.length})`:`Xatolarni saqlash (${mx.length})`}</button>`:""}</div><p class="ch-net gss-st"></p></div>`; }
+  return `<div class="lrn-card gss" data-gssk="${key}"><div class="gss-b"><button type="button" class="btn primary" data-gss="share">📤 ${ru?"Поделиться результатом":"Natijani ulashish"}</button>${key==="kg"&&mx&&mx.length?`<button type="button" class="btn primary" data-gss="retry">🔁 ${ru?`Повторить ошибки (${mx.length})`:`Xatolarimni takrorlash (${mx.length})`}</button>`:""}${mx&&mx.length?`<button type="button" class="btn" data-gss="save">💾 ${ru?`Сохранить ошибки (${mx.length})`:`Xatolarni saqlash (${mx.length})`}</button>`:""}</div><p class="ch-net gss-st"></p></div>`; }
 /* 🖼 Ulashish — chiroyli rasm bilan, link yo'q (2026-10-22, Otabek: «share qilganda chiroyli rasm chiqsin … nma kk manga link») */
 function gcRR(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
 function gcDraw(o){ const W=1080,H=1350, cv=document.createElement("canvas"); cv.width=W; cv.height=H; const c=cv.getContext("2d");
@@ -1814,6 +1814,7 @@ document.addEventListener("click",e=>{ const ov=document.getElementById("gc-ov")
 document.addEventListener("click",e=>{ if(e.target.closest("[data-mxopen]")){ mxOpen(); return; } });
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-gss]"); if(!b) return; const card=b.closest("[data-gssk]"), G=card&&GSS[card.dataset.gssk]; if(!G) return; const ru=state.lang==="ru", st=card.querySelector(".gss-st");
   if(b.dataset.gss==="share"){ gssShare(G.txt,G.o); return; }
+  if(b.dataset.gss==="retry"){ kgpRetry(); return; }
   if(b.dataset.gss==="save"){ const n=mxAdd(G.mx,G.src); G.done=1; b.outerHTML=`<button type="button" class="btn" data-gss="learn">📝 ${ru?"Учить ошибки →":"Xatolarni yodlash →"}</button>`; if(st) st.textContent=ru?`✓ Сохранено: ${n} новых · всего в «Мои ошибки»: ${mxGet().length}`:`✓ Saqlandi: ${n} ta yangi · «Xatolarim»da jami ${mxGet().length} ta`; return; }
   if(b.dataset.gss==="learn"){ try{ if(typeof ltpClose==="function"&&!document.getElementById("ltp")?.hidden) ltpClose(); }catch(err){} try{ const k=document.getElementById("kgp"); if(k&&!k.hidden){ k.hidden=true; document.body.style.overflow=""; } }catch(err){} mxOpen(); } });
 function lrnKey(id){ try{ const d=window.__LERN&&window.__LERN[id]; if(d&&d.alias) id=d.alias; }catch(e){} return "lern:"+id; }
@@ -5988,7 +5989,7 @@ function kgRunHTML(K){ return `<div class="kg-qhead"><span class="kg-qn">🏃 O�
     <ol class="tp-rows" id="kg-rows"></ol>`; }
 function kgEndHTML(K){ const L=kgRank(K), medal=["🥇","🥈","🥉"], P=[L[1],L[0],L[2]];
   return `${L[0]?`<div class="tp-podium kg-pod">${P.map((p,i)=>p?`<div class="pd pd${[2,1,3][i]}"><div class="pn">${esc(p.n)}</div><div class="ps">${p.ok} to‘g‘ri · ${kgTie(K,p)}</div><div class="pb">${medal[[1,0,2][i]]}</div></div>`:`<div class="pd pd${[2,1,3][i]} empty"></div>`).join("")}</div>`:""}
-    <div class="kg-ctl"><button type="button" class="btn primary" data-kg="rboard">📊 Hisobot — kim qayerda xato qildi</button><button type="button" class="btn" data-kg="kshare">📤 Telegram’ga</button><button type="button" class="btn" data-kg="csv">⬇ Excel</button></div>
+    <div class="kg-ctl"><button type="button" class="btn primary" data-kg="kshare">📤 Natijani guruhga yuborish</button><button type="button" class="btn" data-kg="rboard">📊 Hisobot — kim qayerda xato qildi</button><button type="button" class="btn" data-kg="csv">⬇ Excel</button></div><p class="ch-net kg-shhint">💡 Darsdan erta ketganlar ham ko‘rsin — natija rasmini Telegram guruhga yuboring.</p>
     <ol class="tp-rows" id="kg-rows"></ol>`; }
 /* 🚨 Doska «Cheater!» deb baqiradi (2026-10-22, Otabek) */
 function kgCheat(p){ try{ kgSnd("alarm",1); if(kgSndOn(true)) setTimeout(()=>kgSayTTS("Cheater! "+String(p.n).split(" ")[0]+"!"),350); }catch(e){}
@@ -6252,7 +6253,25 @@ function kgpMissHTML(L){ const ok=L.filter(x=>x[2]).length;
 function kgpDone(){ const n=KGP.qs.length, me=kgpStat(KGP.a), miss=KGP.qs.map((q,i)=>{ const x=KGP.a[i]; return [q,x,!!x&&kgJudge(q,x[0])]; });
   kgpEl().innerHTML=kgpHead()+`<div class="lrn-body"><div class="lrn-card lrn-end"><div class="big">🏁</div><h3>${esc(kz("done"))}</h3><p class="ch-big"><b>${esc(kz("score")(me.ok,n))}</b> · ⏱ ${ltFmt(me.tie)}</p><p class="ch-big" id="kg-place"></p></div>
     ${kgpGss(me.ok,n,miss)}${kgpMissHTML(miss)}<div class="lrn-card"><h3>${esc(kz("board"))}</h3><div id="kg-board"></div></div></div>`; kgpBoard(); }
-function kgpGss(ok,n,miss,pl,tot){ const ru=state.lang==="ru", nm=(KGP.g&&KGP.g.nm)||"";
+/* 🔁 Tugatgandan keyin shu o'yindagi xatolarni darhol takrorlash (2026-10-22, Otabek) — hammasi to'g'ri bo'lguncha */
+function kgpRetry(){ const L=(KGP.lastMiss||[]).filter(m=>!m[2]).map(m=>m[0]); if(!L.length) return; KGP.rt={q:L.map((q,i)=>i),L,ok:0,tries:0,back:kgpEl().innerHTML}; kgpRtQ(); }
+function kgpRtQ(){ const R=KGP.rt, ru=state.lang==="ru"; if(!R) return; const el=kgpEl();
+  if(!R.q.length){ el.innerHTML=kgpHead()+`<div class="lrn-body"><div class="lrn-card lrn-end"><div class="big">🎉</div><h3>${ru?"Все ошибки исправлены!":"Hamma xatolar tuzatildi!"}</h3><p class="ch-big">${R.L.length} / ${R.L.length} ✓ · ${ru?"попыток":"urinish"}: ${R.tries}</p><button type="button" class="btn primary" data-kgrt="back">← ${ru?"К результатам":"Natijaga qaytish"}</button></div></div>`; try{ kgSnd("fan"); }catch(e){} return; }
+  const q=R.L[R.q[0]], one=q.o&&q.o.some(o=>o.length>22);
+  el.innerHTML=kgpHead()+`<div class="lrn-body"><div class="ch-top"><span class="ch-score">🔁 ${ru?"Повтор ошибок":"Xatolarni takrorlash"} · ✓ ${R.L.length-R.q.length} / ${R.L.length}</span><button type="button" class="lrn-link" data-kgrt="back">✕</button></div>
+    <div class="lrn-card"><div class="kg-qtext" lang="de">${kgQtx(q.q)}</div>
+    ${q.o?`<div class="kgp-opts${one?" one":""}">${q.o.map((o,j)=>`<button type="button" class="kg-o" style="--c:${KG_COL[j%4][0]}" data-kgrto="${j}"><i>${KG_COL[j%4][1]}</i><span lang="de">${esc(o)}</span></button>`).join("")}</div>`
+      :`<form id="kgrt-f" class="lrn-wr" autocomplete="off"><input id="kgrt-in" lang="de" autocapitalize="off" spellcheck="false" placeholder="…"><button type="submit" class="btn primary">${ru?"Проверить":"Tekshirish"}</button></form>`}
+    <div class="lrn-fb" id="kgrt-fb"></div></div></div>`; }
+function kgpRtAns(v){ const R=KGP.rt; if(!R||R.lock) return; const q=R.L[R.q[0]], ok=kgJudge(q,v), fb=document.getElementById("kgrt-fb"), ru=state.lang==="ru"; R.tries++; R.lock=1;
+  document.querySelectorAll("[data-kgrto]").forEach(b=>{ const j=+b.dataset.kgrto; if(q.o&&q.c.includes(j)) b.classList.add("ok"); else if(String(j)===String(v)) b.classList.add("no"); b.disabled=true; });
+  if(fb){ fb.className="lrn-fb "+(ok?"ok":"bad"); fb.innerHTML=ok?`<div class="lrn-v">✓ ${ru?"Верно!":"To‘g‘ri!"}</div>`:`<div class="lrn-v">✗ ${ru?"Правильно":"To‘g‘risi"}: <b lang="de">${esc(kgCor(q))}</b></div><div class="lrn-note">${ru?"Этот вопрос будет ещё раз.":"Bu savol yana chiqadi."}</div>`; }
+  try{ kgSnd(ok?"ok":"bad"); }catch(e){}
+  setTimeout(()=>{ R.lock=0; const k=R.q.shift(); if(!ok) R.q.push(k); kgpRtQ(); }, ok?900:2200); }
+document.addEventListener("click",e=>{ const o=e.target.closest("[data-kgrto]"); if(o&&!o.disabled){ kgpRtAns(+o.dataset.kgrto); return; }
+  const bk=e.target.closest("[data-kgrt]"); if(bk&&KGP.rt){ const h=KGP.rt.back; KGP.rt=null; if(KGP.st==="done"&&KGP.g&&KGP.g.m==="s") kgpDone(); else kgpK(); } });
+document.addEventListener("submit",e=>{ if(e.target.id==="kgrt-f"){ e.preventDefault(); const i=document.getElementById("kgrt-in"); if(i&&i.value.trim()) kgpRtAns(i.value); } });
+function kgpGss(ok,n,miss,pl,tot){ KGP.lastMiss=miss; const ru=state.lang==="ru", nm=(KGP.g&&KGP.g.nm)||"";
   const txt=ru?`🎮 Игра в классе · ${nm}\nМой результат: ${ok} из ${n}${pl?` · ${pl}-е место из ${tot}`:""} 🏁`:`🎮 Sinf o‘yini · ${nm}\nNatijam: ${ok} / ${n}${pl?` · ${pl}-o‘rin (${tot} kishidan)`:""} 🏁`;
   return gssHTML("kg",txt,miss.filter(m=>!m[2]).map(([q])=>({de:kgCor(q),q:String(q.q||"").replace(/\s+/g," ")})),"Sinf o‘yini",{kg:1,kind:"🎮 Sinf o‘yini",title:nm,name:KGP.name,ok,n,place:pl,tot}); }
 /* savolma-savol: telefon — tugmalar, «qabul qilindi», natija, yakun */
