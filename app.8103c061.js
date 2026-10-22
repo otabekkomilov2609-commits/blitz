@@ -1770,7 +1770,8 @@ function mxOpen(){ if(mxSync()) lrnOpen(MX_ID); }
 const GSS={};
 function gssHTML(key,txt,mx,src,o){ const ru=state.lang==="ru"; GSS[key]={txt,mx,src,o}; const sv=!!GSS[key].done;
   const nud=(!IN_ARTIFACT&&!window.BLITZ&&!appStandalone()&&(APP.ev||appIOS()||/android/i.test(navigator.userAgent)))?`<div class="gss-app"><span>📲 ${ru?"В приложении результаты всегда под рукой — 1 нажатие":"Ilovada natijalaringiz doim qo‘l ostida — 1 bosish"}${ACC.cur?` · 🏅 +2`:""}</span><button type="button" class="btn" data-appask="go">${ru?"Установить":"O‘rnatish"}</button></div>`:"";
-  return `<div class="lrn-card gss" data-gssk="${key}">${nud}<div class="gss-b"><button type="button" class="btn primary" data-gss="share">📤 ${ru?"Поделиться результатом":"Natijani ulashish"}</button>${key==="kg"&&mx&&mx.length?`<button type="button" class="btn primary" data-gss="retry">🔁 ${ru?`Повторить ошибки (${mx.length})`:`Xatolarimni takrorlash (${mx.length})`}</button>`:""}${mx&&mx.length?`<button type="button" class="btn" data-gss="save">💾 ${ru?`Сохранить ошибки (${mx.length})`:`Xatolarni saqlash (${mx.length})`}</button>`:""}</div><p class="ch-net gss-st"></p></div>`; }
+  const mrl=mrOn()&&ACC.cur&&mrActive()?`<div class="mr-line">📣 ${ru?"Марафон":"Marafon"}: ${ru?"у вас":"siz"} <b>${mrCalc().p}</b> ${ru?"баллов":"ball"}${mrMyPos()?` · ${mrMyPos()}-${ru?"е место":"o‘rin"}`:""} — ${ru?"поделитесь: кто-то откроет — +1":"ulashing, kimdir kirsa +1"}</div>`:"";
+  return `<div class="lrn-card gss" data-gssk="${key}">${mrl}${nud}<div class="gss-b"><button type="button" class="btn primary" data-gss="share">📤 ${ru?"Поделиться результатом":"Natijani ulashish"}</button>${key==="kg"&&mx&&mx.length?`<button type="button" class="btn primary" data-gss="retry">🔁 ${ru?`Повторить ошибки (${mx.length})`:`Xatolarimni takrorlash (${mx.length})`}</button>`:""}${mx&&mx.length?`<button type="button" class="btn" data-gss="save">💾 ${ru?`Сохранить ошибки (${mx.length})`:`Xatolarni saqlash (${mx.length})`}</button>`:""}</div><p class="ch-net gss-st"></p></div>`; }
 /* 🖼 Ulashish — chiroyli rasm bilan, link yo'q (2026-10-22, Otabek: «share qilganda chiroyli rasm chiqsin … nma kk manga link») */
 function gcRR(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
 function gcDraw(o){ const W=1080,H=1350, cv=document.createElement("canvas"); cv.width=W; cv.height=H; const c=cv.getContext("2d");
@@ -1803,8 +1804,12 @@ function gcDraw(o){ const W=1080,H=1350, cv=document.createElement("canvas"); cv
   const d=new Date(), p2=x=>String(x).padStart(2,"0");
   c.font=`500 30px ${SANS}`; c.fillStyle="rgba(255,255,255,.6)"; c.textAlign="left"; c.fillText(`${p2(d.getDate())}.${p2(d.getMonth()+1)}.${d.getFullYear()}`,70,H-60);
   c.textAlign="right"; c.font=`40px ${HAND}`; c.fillStyle="rgba(255,255,255,.85)"; c.fillText(window.BLITZ?"Blitz":"Otabek Komilov",W-70,H-58);
+  /* 📣 do'st kodi + QR (rasm forward qilinsa ham kod u bilan ketadi — 2026-10-23, Otabek) */
+  try{ if(!window.BLITZ&&HP_REF&&window.qrcode){ const q=qrcode(0,"M"); q.addData(CH_SITE+"?ref="+HP_REF); q.make(); const n=q.getModuleCount(), sz=150, cell=sz/n, x0=W-70-sz, y0=H-120-sz; c.fillStyle="#fff"; c.fillRect(x0-10,y0-10,sz+20,sz+20); c.fillStyle="#12305F"; for(let r=0;r<n;r++) for(let k=0;k<n;k++) if(q.isDark(r,k)) c.fillRect(x0+k*cell,y0+r*cell,cell+.5,cell+.5);
+      c.textAlign="right"; c.fillStyle="#FFD166"; c.font=`800 34px ${SANS}`; c.fillText("kod: "+HP_REF,W-70-sz-24,y0+sz-6); c.fillStyle="rgba(255,255,255,.75)"; c.font=`500 26px ${SANS}`; c.fillText("streber.uz/?ref="+HP_REF,W-70-sz-24,y0+sz-44); } }catch(e){}
   return cv; }
-async function gssShare(txt,o){ try{ await Promise.all(['92px "Patrick Hand"','800 100px Nunito','600 40px Nunito'].map(x=>document.fonts.load(x))); }catch(e){}
+function qrLib(){ return new Promise(ok=>{ if(window.qrcode) return ok(); let s=document.getElementById("qr-js"); if(!s){ s=document.createElement("script"); s.id="qr-js"; s.src="files/js/qrcode.js"; document.head.appendChild(s); } s.addEventListener("load",()=>ok()); s.addEventListener("error",()=>ok()); setTimeout(ok,2500); }); }
+async function gssShare(txt,o){ try{ await Promise.all(['92px "Patrick Hand"','800 100px Nunito','600 40px Nunito'].map(x=>document.fonts.load(x))); }catch(e){} try{ if(ACC.cur&&!window.BLITZ){ await hpRefCode(); await qrLib(); } }catch(e){}
   const cv=gcDraw(o||{title:txt}), blob=await new Promise(r=>cv.toBlob(r,"image/png")), name=(o&&o.kg?"oyin":"live-test")+"-natija.png";
   try{ const file=new File([blob],name,{type:"image/png"}); if(navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({files:[file],text:txt}); try{ actEv("share",o&&o.kg?"kg":"lt"); hpAdd("share",1,"",""); }catch(err){} return; } }catch(e){ if(e&&e.name==="AbortError") return; }
   /* ulashish yo'q (kompyuter) — rasm oynada: saqlash yoki nusxalash */
@@ -1951,6 +1956,13 @@ document.addEventListener("click",e=>{ const t=e.target.closest(".uk-t"), k=e.ta
   void k; });
 /* 🌗 rejim tugmasi: avto (telefon sozlamasi) → 🌙 tungi → ☀️ kunduzgi */
 function thmIcon(){ const t=document.documentElement.getAttribute("data-theme"); const b=document.getElementById("thm-btn"); if(b) b.textContent=t==="dark"?"🌙":t==="light"?"☀️":"🌗"; }
+/* 🎓 ustoz paneli yashirin: streber saytida 🎓 tugma yo'q, 🌗 tugmani 0,7 s bosib turilsa ochiladi (2026-10-22, Otabek) */
+(function(){ if(window.BLITZ) return; const tb=document.getElementById("tch-btn"); if(tb) tb.hidden=true; const b=document.getElementById("thm-btn"); if(!b) return; let t=null, long=false;
+  const dn=e=>{ long=false; clearTimeout(t); t=setTimeout(()=>{ long=true; try{ navigator.vibrate&&navigator.vibrate(30); }catch(x){} try{ localStorage.removeItem("tch"); }catch(x){} /* har safar kod so'raladi (Otabek) */ TP.tab="kg"; TP.b=null; TP.k=null; TP.kgR=null; tpOpen(); },700); };
+  const up=()=>{ clearTimeout(t); };
+  b.addEventListener("pointerdown",dn); b.addEventListener("pointerup",up); b.addEventListener("pointerleave",up); b.addEventListener("pointercancel",up);
+  b.addEventListener("contextmenu",e=>e.preventDefault());
+  b.addEventListener("click",e=>{ if(long){ long=false; e.stopImmediatePropagation(); e.preventDefault(); } },true); })();
 document.addEventListener("click",e=>{ if(!e.target.closest("#thm-btn")) return; const r=document.documentElement, t=r.getAttribute("data-theme"), n=!t?"dark":t==="dark"?"light":"";
   if(n) r.setAttribute("data-theme",n); else r.removeAttribute("data-theme"); try{ if(n) localStorage.setItem("theme",n); else localStorage.removeItem("theme"); }catch(err){}
   const mc=document.querySelector('meta[name="theme-color"]'); thmIcon(); });
@@ -2011,7 +2023,7 @@ document.addEventListener("click",e=>{ if(e.target.closest("[data-agopen]")){ ag
 function appDone(){ if(appStandalone()) return; const ru=state.lang==="ru"; let o=document.getElementById("app-done"); if(!o){ o=document.createElement("div"); o.id="app-done"; o.className="app-done"; document.body.appendChild(o); }
   o.innerHTML=`<div class="app-done-b"><img src="/icons/icon-192.png" alt="" class="app-done-ic"><h3>✅ ${ru?"Приложение установлено!":"Ilova o‘rnatildi!"}</h3><p>${ru?"В приложении заниматься намного удобнее: открывается одним нажатием, на весь экран, без адресной строки. Найдите <b>Streber</b> на главном экране телефона.":"Ilovada o‘qish ancha qulay: bir bosishda ochiladi, butun ekranda, manzil satrisiz. <b>Streber</b> belgisi telefoningizning bosh ekranida turibdi."}</p><div class="app-done-ph"><span>📱</span><img src="/icons/icon-192.png" alt=""><b>Streber</b></div><button type="button" class="btn primary" data-appdone>${ru?"Понятно":"Tushunarli"}</button></div>`; o.hidden=false; }
 document.addEventListener("click",e=>{ if(e.target.closest("[data-appdone]")){ const o=document.getElementById("app-done"); if(o) o.hidden=true; } });
-window.addEventListener("appinstalled",()=>{ APP.ev=null; appShow(); try{ actEv("app","install"); }catch(e){} try{ hpAdd("app",2,state.lang==="ru"?"Приложение установлено!":"Ilova o‘rnatildi!","app:inst"); }catch(e){} appDone(); });
+window.addEventListener("appinstalled",()=>{ APP.ev=null; appShow(); try{ actEv("app","install"); }catch(e){} try{ hpRefVisit("a"); }catch(e){} try{ hpAdd("app",2,state.lang==="ru"?"Приложение установлено!":"Ilova o‘rnatildi!","app:inst"); }catch(e){} appDone(); });
 /* ilova sifatida birinchi ochilganda ham ball (iPhone — appinstalled yo'q) */
 setTimeout(()=>{ try{ if(appStandalone()&&ACC.cur) hpAdd("app",2,state.lang==="ru"?"Приложение установлено!":"Ilova o‘rnatildi!","app:inst"); }catch(e){} },4000);
 /* brauzerda ochilgan, lekin ilova o'rnatilgan bo'lsa — eslatma */
@@ -2584,7 +2596,11 @@ async function spAzRun(it,blob){ const mode=spMode(it); const [SDK,T,wav]=await 
 document.addEventListener("pointerdown",e=>{ const b=e.target.closest&&e.target.closest("#sp2-mic"); if(!b||b.disabled) return; e.preventDefault(); try{ b.setPointerCapture(e.pointerId); }catch(er){} SPR.x0=e.clientX||0; spRecStart(); });
 document.addEventListener("pointermove",e=>{ if(!SPR.want) return; const dx=Math.min(0,(e.clientX||0)-SPR.x0), cn=document.getElementById("sp2-cnl"); if(cn){ cn.style.transform=`translateX(${Math.round(dx*.6)}px)`; cn.style.opacity=String(Math.max(.2,1+dx/140)); } if(dx<-90){ SPR.cancel=true; spRecStop(); } });
 ["pointerup","pointercancel"].forEach(tp=>document.addEventListener(tp,e=>{ if(SPR.want||(SPR.rec&&SPR.rec.state==="recording")) spRecStop(); }));
-document.addEventListener("contextmenu",e=>{ if(e.target.closest&&e.target.closest("#sp2-mic")) e.preventDefault(); });
+document.addEventListener("contextmenu",e=>{ if(e.target.closest&&e.target.closest("#sp2-mic,#kc-mic")) e.preventDefault(); });
+/* Karteikarten mikrofoni — xuddi shu Telegram uslubi (2026-10-23) */
+document.addEventListener("pointerdown",e=>{ const b=e.target.closest&&e.target.closest("#kc-mic"); if(!b) return; e.preventDefault(); e.stopPropagation(); try{ b.setPointerCapture(e.pointerId); }catch(er){} KC.x0=e.clientX||0; kcStart(); },true);
+document.addEventListener("pointermove",e=>{ if(!KC.on) return; const dx=Math.min(0,(e.clientX||0)-KC.x0), cn=document.getElementById("kc-cnl"); if(cn){ cn.style.transform=`translateX(${Math.round(dx*.6)}px)`; cn.style.opacity=String(Math.max(.2,1+dx/140)); } if(dx<-90) kcStop(true); });
+["pointerup","pointercancel"].forEach(tp=>document.addEventListener(tp,e=>{ if(KC.on) kcStop(); }));
 document.addEventListener("keydown",e=>{ if((e.key===" "||e.key==="Enter")&&e.target&&e.target.id==="sp2-mic"&&!e.repeat){ e.preventDefault(); if(!SPR.want) spRecStart(); } });
 document.addEventListener("keyup",e=>{ if((e.key===" "||e.key==="Enter")&&e.target&&e.target.id==="sp2-mic"){ e.preventDefault(); if(SPR.want) spRecStop(); } });
 
@@ -3410,9 +3426,9 @@ function lrnRoundEnd(){
 function lrnFinish(){
   if(LR.mode==="learn"){ accLern(); try{ const D=lernData()[LR.id], got=lrnItems().filter(x=>LR.st[x.i]===2).length-(LR.d0||0); if(got>0) actLog("lern",LR.id,"🧠 Wortschatz "+(D.all||accLvl(byId[LR.id])||"")+" · L"+[...LR.sel].sort((a,b)=>a-b).join(","),got,0); }catch(e){} }
   if(LR.mode==="cards"){ const kn=lrnLeftKnown().length;
-    lrnEl().innerHTML=`${lrnHead()}<div class="lrn-body"><div class="lrn-card lrn-end"><div class="big">🏆</div><h3>${esc(LR.cardsRest>0?lt("cardsGoal")(LR.cardsN):lt("cardsDone"))}</h3>${LR.cardsRest>0?`<button type="button" class="btn primary" data-l="cards">${esc(lt("cardsMore")(Math.min(lrnGoal(),LR.cardsRest)))} →</button>`:""}${LR.allKnown?`<p>${esc(lt("cardsAll"))}</p>`:""}
+    lrnEl().innerHTML=`${lrnHead()}<div class="lrn-body"><div class="lrn-card lrn-end"><div class="big">🏆</div><h3>${esc(LR.cardsRest>0?lt("cardsGoal")(LR.cardsN):lt("cardsDone"))}</h3>${kcEndHTML()}${LR.cardsRest>0?`<button type="button" class="btn primary" data-l="cards">${esc(lt("cardsMore")(Math.min(lrnGoal(),LR.cardsRest)))} →</button>`:""}${LR.allKnown?`<p>${esc(lt("cardsAll"))}</p>`:""}
       ${kn?`<button type="button" class="btn${LR.cardsRest>0?"":" primary"}" data-l="kchk">${esc(lt("chk"))} (${kn})</button>`:""}
-      <button type="button" class="btn" data-l="back">${esc(lt("back"))}</button><button type="button" class="lrn-link" data-l="kreset">${esc(lt("cardsReset"))}</button></div></div>`;
+      <button type="button" class="btn" data-l="back">${esc(lt("back"))}</button><button type="button" class="lrn-link" data-l="kreset">${esc(lt("cardsReset"))}</button></div>${kcEndLists()}</div>`;
     return; }
   lrnEl().innerHTML=`${lrnHead()}<div class="lrn-body">${lrnProgress()}<div class="lrn-card lrn-end"><div class="big">🏆</div><h3>${esc(LR.chk?lt("chkDone"):LR.goalN&&lrnItems().some(x=>LR.st[x.i]!==2)?lt("goalDone")(LR.goalN):lt("allDone"))}</h3>${progUpHtml()}
     ${!LR.chk&&lrnItems().some(x=>LR.st[x.i]!==2)?`<button type="button" class="btn primary" data-l="learn">${esc(lt("goalMore")(Math.min(lrnGoal()||1e9,lrnItems().filter(x=>LR.st[x.i]!==2).length)))} →</button><button type="button" class="btn" data-l="back">${esc(lt("back"))}</button>`:`<button type="button" class="btn primary" data-l="back">${esc(lt("back"))}</button><button type="button" class="lrn-link" data-l="restart">${esc(lt("restart"))}</button>`}</div>${lrnGameBlock()}</div>`;
@@ -3420,16 +3436,79 @@ function lrnFinish(){
 function lrnGameBlock(){ const uz=state.lang!=="ru"; try{ if(!LR.id||!LR.sel||!LR.sel.size||chPool({l:LR.id,s:[...LR.sel]}).length<4) return ""; }catch(e){ return ""; }
   return `<div class="vs-blk"><span class="mu-sp-b">${uz?"yangi":"новое"}</span><div class="mu-sp-h"><span>⚔️</span><b>${uz?"Do‘stingizni chaqiring!":"Позовите друга!"}</b></div><p>${uz?"Shu so‘zlar bilan — kim tezroq va to‘g‘riroq?":"С этими словами — кто быстрее и точнее?"}</p><div class="lrn-row2"><button type="button" class="btn vs-b" data-l="duel">⚔️ Duel</button><button type="button" class="btn vs-b" data-l="chal">🏆 Challenge</button></div></div>`; }
 /* ---------- Karteikarten ---------- */
-function lrnStartCards(){ LR.mode="cards"; LR.cHist=[]; const KN=lrnKnown(), all=lrnItems(); const un=lrnShuffle(all.filter(x=>!KN.has(x.i))); LR.cards=un.slice(0,lrnGoal()||un.length); LR.cardsN=LR.cards.length; LR.cardsRest=un.length-LR.cards.length; LR.allKnown=!un.length&&all.length>0; LR.flip=false; lrnCard(); }
+/* 🎤 Karteikartada gapirib tekshirish (2026-10-23, Otabek: «karteikarten borku, gapirishni eshitib tekshirish funksiyasini qo'shsagchi»):
+   old tomonda 🎤 → o'quvchi nemischasini aytadi → Azure (talaffuz bahosi) yoki brauzer tanishi → to'g'ri bo'lsa karta o'zi ochilib «Bilaman»ga o'tadi, xato bo'lsa ochilib eshitilgan matn qizil ko'rsatiladi */
+const KC={rec:null,sr:null,st:null,on:false,txt:"",chunks:[],t0:0,tm:null,res:null,busy:false};
+function kcCan(){ return !IN_ARTIFACT&&!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)&&((azOn()&&AZ.ok)||!!(window.SpeechRecognition||window.webkitSpeechRecognition)); }
+function kcMicRow(){ if(!kcCan()) return ""; const uz=state.lang!=="ru"; return `<div class="sp2-tg kc-tg${KC.on?" on":""}" id="kc-tg"><span class="tg-ph" id="kc-lb">${KC.busy?"⏳ "+(uz?"Tekshiryapman…":"Проверяю…"):(uz?"🎙 Nemischasini ayting — mikrofonni bosib turing":"🎙 Скажите по-немецки — держите микрофон")}</span><span class="tg-dot"></span><span class="tg-tm" id="kc-tm">0:00,0</span><span class="tg-live" id="kc-live"></span><span class="tg-cnl" id="kc-cnl">‹ ${uz?"Chapga — bekor":"Влево — отмена"}</span><button type="button" class="tg-mic" id="kc-mic" aria-label="🎙">🎙</button></div>`; }
+function kcBanner(x){ const r=KC.res; if(!r||r.i!==x.i) return ""; const uz=state.lang!=="ru";
+  if(r.unclear) return `<span class="kc-bn mid">🎙 ${uz?"Yaxshi eshitmadim — yana urinib ko‘ring":"Плохо слышно — попробуйте ещё"}</span>`;
+  const low=r.ok&&r.sc!=null&&r.sc<60;
+  return `<span class="kc-bn ${r.ok?(low?"mid":"ok"):"bad"}">🎙 Sie: <b>${esc(r.heard||"—")}</b> ${r.ok?"✅":"❌"}${r.sc!=null?` 🎯 ${r.sc}%`:""}${r.art?` · ${uz?"artikel":"артикль"}: <b>${esc(r.art)}</b>`:""}${low?` · ${uz?"aniqroq ayting":"чётче"}`:""}</span>`; }
+function kcRef(x){ return String(x.full||x.de||"").replace(/\([^)]*\)/g," ").replace(/,.*$/,"").replace(/\s+/g," ").trim(); } /* «das Paar, -e» → «das Paar» */
+function kcWords(s){ return String(s).toLowerCase().replace(/\([^)]*\)/g," ").replace(/[^a-zäöüß0-9\s-]/g," ").split(/[\s-]+/).filter(Boolean); }
+function kcMatch(expect,heard){ const E=kcWords(expect), H=kcWords(heard); if(!E.length||!H.length) return false;
+  const art=new Set(["der","die","das"]), E2=E.filter(w=>!art.has(w)), eA=E.find(w=>art.has(w)), hA=H.find(w=>art.has(w));
+  /* artikel aniq tekshiriladi: kutilgan so'zda artikel bo'lsa — aytilmasa yoki boshqa bo'lsa xato (2026-10-23, Otabek) */
+  if(eA&&eA!==hA) return false;
+  const core=E2.length?E2:E; let hit=0; core.forEach(w=>{ if(H.some(h=>spLike(h,w))) hit++; }); return hit>=Math.max(1,Math.ceil(core.length*0.75)); }
+function kcArt(expect,heard){ const art=new Set(["der","die","das"]), eA=kcWords(expect).find(w=>art.has(w)), hA=kcWords(heard).find(w=>art.has(w)); return eA&&eA!==hA?eA:""; }
+async function kcStart(){ if(KC.on||KC.busy) return; const x=LR.cards[0]; if(!x) return; const uz=state.lang!=="ru";
+  try{ wkStop(); speechSynthesis.cancel(); }catch(e){}
+  let st; try{ st=KC.st&&KC.st.getAudioTracks().some(t=>t.readyState==="live")?KC.st:await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}); KC.st=st; }
+  catch(e){ const el=document.getElementById("kc-st"); if(el) el.textContent=uz?"🎙 Mikrofonga ruxsat berilmadi":"🎙 Нет доступа к микрофону"; return; }
+  const mt=["audio/webm;codecs=opus","audio/mp4","audio/webm"].find(t=>{ try{ return MediaRecorder.isTypeSupported(t); }catch(e){ return false; } });
+  KC.chunks=[]; KC.txt=""; KC.res=null; try{ KC.rec=new MediaRecorder(st,mt?{mimeType:mt}:undefined); }catch(e){ KC.rec=new MediaRecorder(st); }
+  KC.rec.ondataavailable=e=>{ if(e.data&&e.data.size) KC.chunks.push(e.data); }; KC.rec.onstop=()=>kcDone(x);
+  const SRc=window.SpeechRecognition||window.webkitSpeechRecognition; if(SRc&&!(azOn()&&AZ.ok)){ try{ const r=new SRc(); r.lang="de-DE"; r.continuous=true; r.interimResults=false; r.onresult=e=>{ KC.txt=Array.from(e.results).map(y=>y[0].transcript).join(" ").trim(); }; r.onerror=()=>{}; r.start(); KC.sr=r; }catch(e){ KC.sr=null; } }
+  KC.on=true; KC.cancel=false; KC.t0=Date.now(); KC.rec.start(); try{ actEv("kc","start"); }catch(e){}
+  const bar=document.getElementById("kc-tg"); if(bar) bar.classList.add("on"); const lv=document.getElementById("kc-live"); if(lv) lv.innerHTML=""; const cn=document.getElementById("kc-cnl"); if(cn){ cn.style.transform=""; cn.style.opacity=""; }
+  try{ const ac=wkCtx&&wkCtx(); if(ac){ if(ac.state==="suspended") ac.resume(); KC.src=ac.createMediaStreamSource(st); KC.an=ac.createAnalyser(); KC.an.fftSize=512; KC.src.connect(KC.an); } }catch(e){ KC.an=null; }
+  KC.lv=[]; const tick=()=>{ if(!KC.on) return; const box=document.getElementById("kc-live"); let lvl=.3+Math.random()*.5; if(KC.an){ const d=new Uint8Array(KC.an.fftSize); KC.an.getByteTimeDomainData(d); let q=0; for(let i=0;i<d.length;i++){ const v=(d[i]-128)/128; q+=v*v; } lvl=Math.min(1,Math.sqrt(q/d.length)*4.2); } KC.lv.push(lvl); if(box){ const i=document.createElement("i"); i.style.height=Math.max(12,Math.round(lvl*100))+"%"; box.appendChild(i); while(box.children.length>22) box.removeChild(box.firstChild); } const tm=document.getElementById("kc-tm"); if(tm) tm.textContent=spT10((Date.now()-KC.t0)/1000); KC.lt=setTimeout(tick,80); }; tick();
+  clearTimeout(KC.tm); KC.tm=setTimeout(kcStop,8000); /* xavfsizlik chegarasi */ }
+function kcStop(cancel){ if(!KC.on) return; KC.on=false; clearTimeout(KC.tm); clearTimeout(KC.lt); KC.cancel=!!cancel; try{ if(KC.src){ KC.src.disconnect(); KC.src=null; } }catch(e){}
+  const bar=document.getElementById("kc-tg"); if(bar) bar.classList.remove("on");
+  if(cancel){ try{ if(KC.sr) KC.sr.abort(); }catch(e){} try{ if(KC.rec&&KC.rec.state==="recording"){ KC.rec.onstop=null; KC.rec.stop(); } }catch(e){} KC.rec=null; KC.sr=null; const lb=document.getElementById("kc-lb"); if(lb) lb.innerHTML=`<span class="tg-x">${state.lang!=="ru"?"Bekor qilindi":"Отменено"}</span>`; setTimeout(()=>{ if(LR.mode==="cards"&&!KC.on&&!KC.busy) lrnCard(); },1200); return; }
+  KC.busy=true; try{ if(KC.sr) KC.sr.stop(); }catch(e){} try{ if(KC.rec&&KC.rec.state==="recording") KC.rec.stop(); }catch(e){} const lb=document.getElementById("kc-lb"); if(lb) lb.textContent="⏳ "+(state.lang!=="ru"?"Tekshiryapman…":"Проверяю…"); }
+async function kcDone(x){ const dur=(Date.now()-KC.t0)/1000; let heard="", sc=null, az=null;
+  try{ const blob=new Blob(KC.chunks,{type:(KC.chunks[0]&&KC.chunks[0].type)||"audio/webm"});
+    if(dur>=0.5&&azOn()&&AZ.ok){ try{ const [SDK,T,wav]=await Promise.all([azSdk(),azToken(),spWav(blob)]); az=await Promise.race([spAzOnce(SDK,T,wav,kcRef(x),true),new Promise(r=>setTimeout(()=>r(null),9000))]); }catch(e){ az=null; } }
+    else await new Promise(r=>setTimeout(r,800));
+    heard=(az&&az.txt)||KC.txt||""; if(az&&(az.acc||az.pron)) sc=az.pron||az.acc; }catch(e){}
+  KC.busy=false; KC.rec=null; KC.sr=null; if(LR.mode!=="cards"||LR.cards[0]!==x) return;
+  const quiet=KC.an&&KC.lv&&KC.lv.length>3&&Math.max(...KC.lv)<.06; const unclear=dur<0.5||!heard||quiet||(az&&az.conf!=null&&az.conf<.35);
+  const ok=!unclear&&kcMatch(kcRef(x),heard)&&(sc==null||sc>=45), art=!unclear&&!ok?kcArt(kcRef(x),heard):"";
+  KC.res={i:x.i,heard,sc,ok,unclear,art}; if(!unclear){ KC.log=KC.log||[]; const j=KC.log.findIndex(r=>r.i===x.i); const rec={i:x.i,x,heard,sc,ok,art}; if(j>=0) KC.log[j]=rec; else KC.log.push(rec); } try{ actEv("kc",ok?"ok":unclear?"unclear":"bad"); }catch(e){}
+  if(unclear){ lrnCard(); return; }
+  /* to'g'ri aytsa: karta aylanadi, so'z yangraydi, tugma «Weiter →» bo'ladi (2026-10-23, Otabek) */
+  LR.flip=true; lrnCard(); if(ok){ setTimeout(()=>{ try{ if(LR.mode==="cards"&&LR.cards[0]===x){ lrnSay(x.say||x.de); kcSpkPulse(); } }catch(e){} },350); } }
+/* 🎙 yakun: natijalar, takrorlash ro'yxati, ulashish (2026-10-23, Otabek) */
+function kcEndHTML(){ const L=KC.log||[]; if(!L.length) return ""; const uz=state.lang!=="ru", ok=L.filter(r=>r.ok).length, bad=L.length-ok, art=L.filter(r=>r.art).length, S=L.filter(r=>r.sc!=null), avg=S.length?Math.round(S.reduce((a,r)=>a+r.sc,0)/S.length):null, min=Math.max(1,Math.round((Date.now()-(KC.t0s||Date.now()))/60000));
+  return `<div class="kc-sum">${avg!=null?`<div class="kc-ring" style="--p:${avg}"><i>${avg}%</i></div><div class="kc-mu">🎯 ${uz?"o‘rtacha talaffuz":"среднее произношение"} · ${min} ${uz?"daq":"мин"}</div>`:`<div class="kc-mu">🎙 ${L.length} ${uz?"ta so‘z aytildi":"слов сказано"} · ${min} ${uz?"daq":"мин"}</div>`}
+    <div class="kc-st3"><div><b>${ok}</b><span>✅ ${uz?"to‘g‘ri aytdi":"верно"}</span></div><div><b>${bad}</b><span>❌ ${uz?"xato":"ошибка"}</span></div><div><b>${art}</b><span>${uz?"artikel xato":"артикль"}</span></div></div>
+    <div class="ch-btns"><button type="button" class="btn" data-l="kcshare">📤 ${uz?"Natijani ulashish":"Поделиться"}</button></div></div>`; }
+function kcEndLists(){ const L=KC.log||[]; if(!L.length) return ""; const uz=state.lang!=="ru"; const prob=L.filter(r=>!r.ok||(r.sc!=null&&r.sc<60)), good=L.filter(r=>r.ok&&!(r.sc!=null&&r.sc<60));
+  const pct=r=>r.sc!=null?`<span class="kc-pct ${r.ok?(r.sc>=60?"g":"y"):"r"}">${r.ok?r.sc+"%":"✗"}</span>`:`<span class="kc-pct ${r.ok?"g":"r"}">${r.ok?"✓":"✗"}</span>`;
+  const row=r=>`<li><span class="kc-spk2" data-say="${esc(r.x.say||r.x.de)}">🔊</span><span class="w">${esc(r.x.full)}${!r.ok||(r.sc!=null&&r.sc<60)?`<small>Sie: ${esc(r.heard||"—")}${r.art?` · ${uz?"artikel":"артикль"}: <b>${esc(r.art)}</b>`:""}</small>`:""}</span>${pct(r)}</li>`;
+  let h=""; if(prob.length) h+=`<div class="lrn-card kc-list"><b>🎯 ${uz?"Aniqroq ayting":"Скажите чётче"} (${prob.length})</b><ul>${prob.map(row).join("")}</ul><div class="ch-btns"><button type="button" class="btn primary" data-l="kcredo">🎙 ${uz?`Shu ${prob.length} tasini qayta ayting`:`Повторить эти ${prob.length}`}</button></div></div>`;
+  if(good.length){ const avg=Math.round(good.filter(r=>r.sc!=null).reduce((a,r)=>a+r.sc,0)/Math.max(1,good.filter(r=>r.sc!=null).length)); h+=`<details class="lrn-card kc-list"><summary><b>✅ ${uz?"Zo‘r":"Отлично"} (${good.length})</b>${good.some(r=>r.sc!=null)?` <span class="kc-mu">· ${uz?"o‘rtacha":"в среднем"} ${avg}%</span>`:""}</summary><ul>${good.map(row).join("")}</ul></details>`; }
+  return h; }
+function kcRedo(){ const L=(KC.log||[]).filter(r=>!r.ok||(r.sc!=null&&r.sc<60)); if(!L.length) return; LR.mode="cards"; LR.cHist=[]; LR.cards=L.map(r=>r.x); LR.cardsN=LR.cards.length; LR.cardsRest=0; LR.allKnown=false; LR.flip=false; KC.log=[]; KC.res=null; KC.t0s=Date.now(); lrnCard(); }
+function kcShare(){ const L=KC.log||[], uz=state.lang!=="ru", ok=L.filter(r=>r.ok).length, S=L.filter(r=>r.sc!=null), avg=S.length?Math.round(S.reduce((a,r)=>a+r.sc,0)/S.length):null, m=byId[LR.id], ttl=(m?m.title:"")+(avg!=null?` · 🎯 ${avg}%`:"");
+  const txt=uz?`🎙 Karteikarten: ${ok}/${L.length} to‘g‘ri aytdim${avg!=null?`, talaffuz ${avg}%`:""} — streber.uz`:`🎙 Карточки: ${ok}/${L.length} сказал верно${avg!=null?`, произношение ${avg}%`:""} — streber.uz`;
+  gssShare(txt,{kind:"🎙 Karteikarten",title:ttl,name:ACC.name?rkName():"",ok,n:L.length,miss:L.filter(r=>!r.ok).map(r=>r.x.full)}); try{ actEv("share","kc"); }catch(e){} }
+function kcSpkPulse(){ const el=document.querySelector(".kc-spk"); if(!el) return; el.classList.add("play"); clearTimeout(KC.pt); KC.pt=setTimeout(()=>el.classList.remove("play"),1800); }
+function kcRelease(){ clearTimeout(KC.tm); clearTimeout(KC.lt); KC.on=false; KC.busy=false; try{ if(KC.sr) KC.sr.abort(); }catch(e){} try{ if(KC.rec&&KC.rec.state==="recording"){ KC.rec.onstop=null; KC.rec.stop(); } }catch(e){} try{ if(KC.st) KC.st.getTracks().forEach(t=>t.stop()); }catch(e){} KC.st=null; KC.rec=null; KC.sr=null; }
+function lrnStartCards(){ LR.mode="cards"; LR.cHist=[]; KC.log=[]; KC.res=null; KC.t0s=Date.now(); const KN=lrnKnown(), all=lrnItems(); const un=lrnShuffle(all.filter(x=>!KN.has(x.i))); LR.cards=un.slice(0,lrnGoal()||un.length); LR.cardsN=LR.cards.length; LR.cardsRest=un.length-LR.cards.length; LR.allKnown=!un.length&&all.length>0; LR.flip=false; lrnCard(); }
 function lrnCard(){
   if(!LR.cards.length){ lrnFinish(); return; }
   const x=LR.cards[0];
   lrnEl().innerHTML=`${lrnHead(`<span class="lrn-left">${esc(lt("left")(LR.cards.length))}</span>`)}<div class="lrn-body">
     <button type="button" class="lrn-flash${LR.flip?" flip":""}" data-l="flip" aria-live="polite">
-      ${LR.flip?`<span class="lrn-q de">${esc(x.full)}</span>${x.fm?`<span class="lrn-fm">${esc(x.fm)}</span>`:""}${x.ex?`<span class="lrn-ex">${esc(x.ex)}</span>`:""}`:`<span class="lrn-q">${esc(x.ru)}</span>`}
+      ${LR.flip?`<span class="kc-spk" role="button" aria-label="🔊" data-say="${esc(x.say||x.de)}">🔊</span><span class="lrn-q de">${esc(x.full)}</span>${x.fm?`<span class="lrn-fm">${esc(x.fm)}</span>`:""}${x.ex?`<span class="lrn-ex">${esc(x.ex)}</span>`:""}${kcBanner(x)}`:`<span class="lrn-q">${esc(x.ru)}</span>`}
     </button>
-    ${LR.flip?`<div class="lrn-say-row"><button type="button" class="lrn-say" data-say="${esc(x.say||x.de)}">🔊</button></div>`:""}
-    <div class="lrn-kn"><button type="button" class="btn lrn-no" data-l="no">${esc(lt("dontknow"))}</button><button type="button" class="btn lrn-yes" data-l="yes">${esc(lt("know"))}</button></div>
+    ${LR.flip?``:kcMicRow()}
+    ${KC.res&&KC.res.i===x.i&&KC.res.ok&&LR.flip?`<div class="lrn-kn"><button type="button" class="btn lrn-yes kc-next" data-l="yes">Weiter →</button></div>`:`<div class="lrn-kn"><button type="button" class="btn lrn-no" data-l="no">${esc(lt("dontknow"))}</button><button type="button" class="btn lrn-yes" data-l="yes">${esc(lt("know"))}</button></div>`}
     ${LR.cHist&&LR.cHist.length?`<div class="lrn-back"><button type="button" class="lrn-link" data-l="cundo">← Zurück</button></div>`:""}
   </div>`;
 }
@@ -3439,7 +3518,7 @@ document.addEventListener("click",e=>{
   const lb=e.target.closest("[data-lern]"); if(lb){ e.preventDefault(); lrnOpen(lb.dataset.lern);
     if(lb.dataset.les){ const n=+lb.dataset.les; LR.sel=new Set([n]); try{ store.set(lrnKey(lb.dataset.lern)+":sel",JSON.stringify([n])); }catch(err){} lrnList(n); } return; }
   const root=lrnEl(); if(!root||root.hidden||!root.contains(e.target)) return;
-  const say=e.target.closest("[data-say]"); if(say){ lrnSay(say.dataset.say); return; }
+  const say=e.target.closest("[data-say]"); if(say){ lrnSay(say.dataset.say); if(say.classList.contains("kc-spk")) kcSpkPulse(); return; }
   const ch=e.target.closest("[data-ch]"); if(ch){ const i=document.getElementById("lrn-in"); if(i){ const p=i.selectionStart??i.value.length; i.value=i.value.slice(0,p)+ch.dataset.ch+i.value.slice(i.selectionEnd??p); i.focus(); i.setSelectionRange(p+1,p+1); } return; }
   const hf=e.target.closest("#lrn [data-half]"); if(hf){ LR.half=+hf.dataset.half; lrnSetup(); return; }
   const ls=e.target.closest("[data-les]"); if(ls){ const n=+ls.dataset.les; LR.sel.has(n)?LR.sel.delete(n):LR.sel.add(n); store.set(lrnKey(LR.id)+":sel",JSON.stringify([...LR.sel])); lrnSetup(); return; }
@@ -3449,7 +3528,7 @@ document.addEventListener("click",e=>{
     lrnMark(ok); lrnFeedback(ok, LR.cur); return; }
   const b=e.target.closest("[data-l]"); if(!b) return; const a=b.dataset.l;
   if(a==="mtnext"){ lrnMatchNext(); return; }
-  if(a==="close"){ LR.mg=null; if(LR.mode==="list"){ LR.fromList=null; lrnClose(); return; } if(LR.mode){ try{ speechSynthesis.cancel(); }catch(e){} wkStop(); lrnSetup(); } else if(LR.fromList){ lrnList(LR.fromList); } else lrnClose(); }
+  if(a==="close"){ try{ kcRelease(); }catch(e){} LR.mg=null; if(LR.mode==="list"){ LR.fromList=null; lrnClose(); return; } if(LR.mode){ try{ speechSynthesis.cancel(); }catch(e){} wkStop(); lrnSetup(); } else if(LR.fromList){ lrnList(LR.fromList); } else lrnClose(); }
   else if(a==="wlgo"){ lrnSetup(); }
   else if(a==="all"){ Object.keys(lernData()[LR.id].les).forEach(n=>LR.sel.add(+n)); store.set(lrnKey(LR.id)+":sel",JSON.stringify([...LR.sel])); lrnSetup(); }
   else if(a==="none"){ LR.sel.clear(); store.set(lrnKey(LR.id)+":sel","[]"); lrnSetup(); }
@@ -3471,11 +3550,13 @@ document.addEventListener("click",e=>{
   else if(a==="introprev"){ if(LR.ii>0){ LR.ii--; lrnIntro(); } }
   else if(a==="introskip"){ wpFree(); LR.intro=null; lrnNewRound(); }
   else if(a==="flip"){ LR.flip=!LR.flip; lrnCard(); if(LR.flip&&LR.cards[0]) lrnSay(LR.cards[0].say||LR.cards[0].de); }
-  else if(a==="yes"){ (LR.cHist=LR.cHist||[]).push({c:LR.cards.slice(),k:LR.cards[0]&&!lrnKnown().has(LR.cards[0].i)?LR.cards[0].i:null}); const x=LR.cards.shift(); if(x){ const KN=lrnKnown(); KN.add(x.i); lrnKnownSet(KN); } LR.flip=false; lrnCard(); }
+  else if(a==="yes"){ KC.res=null; (LR.cHist=LR.cHist||[]).push({c:LR.cards.slice(),k:LR.cards[0]&&!lrnKnown().has(LR.cards[0].i)?LR.cards[0].i:null}); const x=LR.cards.shift(); if(x){ const KN=lrnKnown(); KN.add(x.i); lrnKnownSet(KN); } LR.flip=false; lrnCard(); }
   else if(a==="cundo"){ const h=(LR.cHist||[]).pop(); if(!h) return; LR.cards=h.c; if(h.k!=null){ const KN=lrnKnown(); KN.delete(h.k); lrnKnownSet(KN); } LR.flip=false; lrnCard(); } /* adashib bosilgan «Bilaman/Bilmayman» — qaytarish (2026-10-22) */
+  else if(a==="kcredo") kcRedo();
+  else if(a==="kcshare") kcShare();
   else if(a==="kchk") lrnStartCheck();
   else if(a==="kreset"){ const KN=lrnKnown(); lrnItems().forEach(x=>KN.delete(x.i)); lrnKnownSet(KN); lrnStartCards(); }
-  else if(a==="no"){ (LR.cHist=LR.cHist||[]).push({c:LR.cards.slice(),k:null}); const x=LR.cards.shift(); LR.cards.splice(Math.min(LR.cards.length,3+Math.floor(Math.random()*4)),0,x); LR.flip=false; lrnCard(); }
+  else if(a==="no"){ KC.res=null; (LR.cHist=LR.cHist||[]).push({c:LR.cards.slice(),k:null}); const x=LR.cards.shift(); LR.cards.splice(Math.min(LR.cards.length,3+Math.floor(Math.random()*4)),0,x); LR.flip=false; lrnCard(); }
 });
 document.addEventListener("change",e=>{ if(e.target.matches('#lrn [data-l="redem"]')){ LR.redem=e.target.checked; lrnSetup(); } });
 /* yozayotganda: so'z to'g'ri, faqat artikl xato — artikl qizil bo'lib silkinadi, Prüfen'siz (2026-10-19) */
@@ -4188,9 +4269,13 @@ initDl(10);
 
 /* ===== Akkaunt oynasi ===== */
 const ACCT={
-  uz:{title:"Ro‘yxatdan o‘tish", lead:"Ma’lumotlar saqlanishi uchun ismingiz va parolingizni kiriting.", name:"Ism va familiya", pw:"Parol", namePh:"Masalan: Jamila Jamilova", pwPh:"Kamida 4 ta belgi", go:"Kirish",
-      note:"Natijalaringiz (Yodlash, varaqlardagi javoblar) internetda saqlanadi: boshqa telefondan ham shu ism va parol bilan kirsangiz, natijalaringiz qaytadi. Ustoz ham ularni ko‘radi. Parolni eslab qoling.", cT:"☁️ Natijalaringizni saqlab qo‘yamiz", cL:"Endi natijalaringiz internetda ham saqlanadi — telefon almashsa yoki sayt manzili o‘zgarsa ham yo‘qolmaydi. Buning uchun parolingizni bir marta kiriting.", cGo:"Saqlash", cLater:"Keyinroq", cBad:"Parol noto‘g‘ri. Esingizda bo‘lmasa — «Parolni unutdim»ni bosing va ustozga ayting.", cChk:"☁️ Tekshirilmoqda…", eCloudPw:"Bu ism bilan ro‘yxatdan o‘tilgan, lekin parol noto‘g‘ri. Parolni unutgan bo‘lsangiz — ustozga ayting.", rNoCloud:"Bunday ism bilan ro‘yxatdan o‘tilmagan.",
-      eName:"Ism va familiyangizni to‘liq yozing", ePw:"Parol kamida 4 ta belgidan iborat bo‘lsin", eWrong:"Parol noto‘g‘ri. Qaytadan urinib ko‘ring.",
+  uz:{title:"Natijalaringiz saqlansin 💾", lead:"Ism va 4 ta raqam — tamom.", name:"Ismingiz", pw:"Parol", namePh:"Masalan: Jamila", pwPh:"Kamida 4 ta belgi", go:"Davom etish →",
+      pin:"4 ta raqamli PIN", pinHint:"Raqamlarni eslab qoling.", ePin:"PIN — 4 ta raqam bo‘lsin", lT:"👤 Kirish", lLead:"Ismingiz va PIN (yoki eski parolingiz).", lPw:"PIN yoki parol", lGo:"Kirish",
+      haveAcc:"Avval ro‘yxatdan o‘tganmisiz?", newAcc:"Yangi o‘quvchimisiz?", reg:"Ro‘yxatdan o‘tish", refChip:"🎁 Do‘stingiz taklifi bilan keldingiz", refAsk:"Do‘stingiz kodi bormi?",
+      taken:n=>`«${n}» band. Bu siz bo‘lsangiz — PIN’ingizni kiriting. Yangi o‘quvchi bo‘lsangiz — familiyani qo‘shing: «${n} A.»`,
+      done:n=>`✅ Tayyor, ${n}!`, keep:"📌 Boshqa telefondan kirish uchun shu ikkisi kerak:", pinL:"PIN", shotB:"📸 Skrinshot olish uchun bosing", shotOk:"✅ Rasm saqlandi — Galereya / «Yuklanmalar»da", shotNo:"Rasm saqlanmadi — shu ekranni o‘zingiz skrinshot qiling.", shotHint:"Saqlanmagan bo‘lsa ham rasm ekranda qoladi — o‘zingiz skrinshot olasiz.", skip:"Eslab qoldim →", imgT:"streber.uz · kirish ma’lumotlari", imgName:"Ism", imgHow:"Boshqa telefondan: streber.uz → 👤 Kirish",
+      note:"Natijalaringiz (Yodlash, varaqlardagi javoblar) internetda saqlanadi: boshqa telefondan ham shu ism va parol bilan kirsangiz, natijalaringiz qaytadi. Ustoz ham ularni ko‘radi. Parolni eslab qoling.", cT:"☁️ Natijalaringizni saqlab qo‘yamiz", cL:"Endi natijalaringiz internetda ham saqlanadi — telefon almashsa yoki sayt manzili o‘zgarsa ham yo‘qolmaydi. Buning uchun parolingizni bir marta kiriting.", cGo:"Saqlash", cLater:"Keyinroq", cBad:"Parol noto‘g‘ri. Esingizda bo‘lmasa — «Parolni unutdim»ni bosing va ustozga ayting.", cChk:"☁️ Tekshirilmoqda…", eCloudPw:"Bu ism band, PIN/parol mos kelmadi. Bu siz bo‘lsangiz — qayta urinib ko‘ring yoki ustozga ayting. Yangi o‘quvchi bo‘lsangiz — familiyani qo‘shing.", rNoCloud:"Bunday ism bilan ro‘yxatdan o‘tilmagan.",
+      eName:"Ismingizni yozing", ePw:"Parol kamida 4 ta belgidan iborat bo‘lsin", eWrong:"Parol noto‘g‘ri. Qaytadan urinib ko‘ring.",
       you:"Siz:", out:"Chiqish", close:"Yopish", other:"Boshqa o‘quvchi bo‘lib kirish uchun «Chiqish»ni bosing.",
       warn:"⚠️ Ism va parolingizni albatta yozib oling! Parolni unutsangiz, uni faqat ustoz tiklay oladi.", forgot:"Parolni unutdim",
       saveT:"⚠️ Login va parolingizni yozib oling!", saveL:"Bu ma’lumotlarni daftaringizga yozing yoki saqlab qo‘ying. Parolni unutsangiz — faqat ustoz orqali tiklanadi, natijalaringizga kira olmay qolasiz.",
@@ -4200,9 +4285,13 @@ const ACCT={
       rNoUser:"Bu telefonda bunday ism bilan ro‘yxatdan o‘tilmagan.", rBadCode:"Ustoz kodi noto‘g‘ri.", back:"← Orqaga",
       here:"Bu telefonda ro‘yxatdan o‘tganlar — ismingizni bosing:", loginIs:"Login — bu ism va familiyangiz (katta-kichik harf farqi yo‘q).",
       sim:n=>`Siz avval «${n}» deb ro‘yxatdan o‘tgansiz shekilli. Bu sizmisiz?`, simYes:"Ha, bu men", simNo:"Yo‘q, men yangi o‘quvchiman"},
-  ru:{title:"Регистрация", lead:"Чтобы данные сохранялись, введите имя и пароль.", name:"Имя и фамилия", pw:"Пароль", namePh:"Например: Jamila Jamilova", pwPh:"Минимум 4 символа", go:"Войти",
-      note:"Ваши результаты (заучивание, ответы в листах) сохраняются в интернете: войдёте с другого телефона с тем же именем и паролем — результаты вернутся. Учитель тоже их видит. Запомните пароль.", cT:"☁️ Сохраним ваши результаты", cL:"Теперь результаты сохраняются и в интернете — не пропадут, даже если смените телефон или адрес сайта. Для этого один раз введите пароль.", cGo:"Сохранить", cLater:"Позже", cBad:"Неверный пароль. Если не помните — нажмите «Забыл пароль» и скажите учителю.", cChk:"☁️ Проверяем…", eCloudPw:"Ученик с таким именем уже есть, но пароль неверный. Если забыли пароль — скажите учителю.", rNoCloud:"Ученика с таким именем нет.",
-      eName:"Напишите имя и фамилию полностью", ePw:"Пароль — минимум 4 символа", eWrong:"Неверный пароль. Попробуйте ещё раз.",
+  ru:{title:"Сохраним ваши результаты 💾", lead:"Имя и 4 цифры — и всё.", name:"Ваше имя", pw:"Пароль", namePh:"Например: Jamila", pwPh:"Минимум 4 символа", go:"Продолжить →",
+      pin:"PIN из 4 цифр", pinHint:"Запомните цифры.", ePin:"PIN — 4 цифры", lT:"👤 Вход", lLead:"Ваше имя и PIN (или старый пароль).", lPw:"PIN или пароль", lGo:"Войти",
+      haveAcc:"Уже регистрировались?", newAcc:"Новый ученик?", reg:"Регистрация", refChip:"🎁 Вы пришли по приглашению друга", refAsk:"Есть код друга?",
+      taken:n=>`Имя «${n}» занято. Если это вы — введите свой PIN. Если вы новый ученик — добавьте фамилию: «${n} A.»`,
+      done:n=>`✅ Готово, ${n}!`, keep:"📌 Чтобы войти с другого телефона, нужны эти две вещи:", pinL:"PIN", shotB:"📸 Нажмите, чтобы сохранить картинку", shotOk:"✅ Картинка сохранена — в Галерее / «Загрузках»", shotNo:"Картинка не сохранилась — сделайте скриншот этого экрана.", shotHint:"Даже если не сохранилось, картинка остаётся на экране — сделайте скриншот сами.", skip:"Я запомнил(а) →", imgT:"streber.uz · данные для входа", imgName:"Имя", imgHow:"С другого телефона: streber.uz → 👤 Войти",
+      note:"Ваши результаты (заучивание, ответы в листах) сохраняются в интернете: войдёте с другого телефона с тем же именем и паролем — результаты вернутся. Учитель тоже их видит. Запомните пароль.", cT:"☁️ Сохраним ваши результаты", cL:"Теперь результаты сохраняются и в интернете — не пропадут, даже если смените телефон или адрес сайта. Для этого один раз введите пароль.", cGo:"Сохранить", cLater:"Позже", cBad:"Неверный пароль. Если не помните — нажмите «Забыл пароль» и скажите учителю.", cChk:"☁️ Проверяем…", eCloudPw:"Это имя занято, PIN/пароль не подходит. Если это вы — попробуйте ещё раз или скажите учителю. Если вы новый ученик — добавьте фамилию.", rNoCloud:"Ученика с таким именем нет.",
+      eName:"Напишите своё имя", ePw:"Пароль — минимум 4 символа", eWrong:"Неверный пароль. Попробуйте ещё раз.",
       you:"Вы:", out:"Выйти", close:"Закрыть", other:"Чтобы войти как другой ученик, нажмите «Выйти».",
       warn:"⚠️ Обязательно запишите имя и пароль! Если забудете пароль, восстановить его сможет только учитель.", forgot:"Забыл(а) пароль",
       saveT:"⚠️ Запишите логин и пароль!", saveL:"Запишите эти данные в тетрадь или сохраните. Если забудете пароль — восстановить можно только через учителя, иначе вы не войдёте к своим результатам.",
@@ -4222,21 +4311,40 @@ async function accHash(s){
 }
 function accEl(){ return document.getElementById("acc"); }
 function accLangRow(){ return `<div class="acc-lang">${["uz","ru"].map(l=>`<button type="button" data-acclang="${l}" aria-pressed="${state.lang===l}">${l.toUpperCase()}</button>`).join("")}</div>`; }
-function accLogin(){ if(window.BLITZ) return; /* Blitz saytida ro‘yxatdan o‘tish so‘ralmaydi (2026-10-22) */
-  const f=document.getElementById("acc-f");
-  f.innerHTML=`<div class="snd-h"><h2>${esc(at("title"))}</h2>${accLangRow()}${ACC.cur?"":`<button type="button" class="snd-x" data-acc="close" aria-label="✕">✕</button>`}</div>
-    <p class="acc-lead">${esc(at("lead"))}</p>
-    ${(()=>{ const U=accUsers(), ns=Object.values(U).map(u=>u.name).filter(Boolean).sort((a,b)=>a.localeCompare(b)); return ns.length?`<div class="acc-here"><small>${esc(at("here"))}</small><div>${ns.map(n=>`<button type="button" class="acc-nm" data-accnm="${esc(n)}">👤 ${esc(n)}</button>`).join("")}</div></div>`:""; })()}
-    <label class="acc-lb">${esc(at("name"))}<input id="acc-name" maxlength="40" autocomplete="name" placeholder="${esc(at("namePh"))}"><span class="acc-hint">${esc(at("loginIs"))}</span></label>
-    <label class="acc-lb">${esc(at("pw"))}<span class="acc-pw"><input id="acc-pw" type="password" maxlength="40" autocomplete="current-password" placeholder="${esc(at("pwPh"))}"><button type="button" class="acc-eye" data-acc="eye" aria-label="👁">👁</button></span></label>
-    <div class="acc-warn">${esc(at("warn"))}</div>
+let ACC_MODE="reg";
+function accLogin(mode){ if(window.BLITZ) return; /* Blitz saytida ro‘yxatdan o‘tish so‘ralmaydi (2026-10-22) · 2026-10-23: oson ro‘yxat — ism + 4 raqamli PIN */
+  const f=document.getElementById("acc-f"), U=accUsers(), ns=Object.values(U).map(u=>u.name).filter(Boolean).sort((a,b)=>a.localeCompare(b));
+  ACC_MODE=mode||(ns.length?"in":"reg"); const reg=ACC_MODE==="reg", rb=hpRefOk(localStorage.getItem("ref:by")||"");
+  f.innerHTML=`<div class="snd-h"><h2>${esc(at(reg?"title":"lT"))}</h2>${accLangRow()}${ACC.cur?"":`<button type="button" class="snd-x" data-acc="close" aria-label="✕">✕</button>`}</div>
+    ${reg&&mrOn()&&rb?`<div class="acc-gift">${esc(at("refChip"))}</div>`:""}
+    <p class="acc-lead">${esc(at(reg?"lead":"lLead"))}</p>
+    ${ns.length?`<div class="acc-here"><small>${esc(at("here"))}</small><div>${ns.map(n=>`<button type="button" class="acc-nm" data-accnm="${esc(n)}">👤 ${esc(n)}</button>`).join("")}</div></div>`:""}
+    <label class="acc-lb">${esc(at("name"))}<input id="acc-name" maxlength="40" autocomplete="username" autocapitalize="words" placeholder="${esc(at("namePh"))}"><span class="acc-hint" id="acc-nst"></span></label>
+    ${reg?`<label class="acc-lb">${esc(at("pin"))}<span class="acc-pin"><i></i><i></i><i></i><i></i><input id="acc-pw" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" aria-label="PIN"></span><span class="acc-hint">${esc(at("pinHint"))}</span></label>`
+      :`<label class="acc-lb">${esc(at("lPw"))}<span class="acc-pw"><input id="acc-pw" type="password" maxlength="40" autocomplete="current-password" placeholder="••••"><button type="button" class="acc-eye" data-acc="eye" aria-label="👁">👁</button></span></label>`}
+    ${reg&&mrOn()?(rb?`<input type="hidden" id="acc-ref" value="${esc(rb)}">`:`<details class="acc-refd"><summary>${esc(at("refAsk"))}</summary><label class="acc-lb acc-ref"><input id="acc-ref" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="DIL7K2"><span class="acc-hint" id="acc-refst"></span></label></details>`):""}
     <div class="acc-st" id="acc-st"></div>
-    <button type="submit" class="btn primary">${esc(at("go"))}</button>
-    <button type="button" class="lrn-link acc-forgot" data-acc="forgot">🔑 ${esc(at("forgot"))}</button>
-    <p class="acc-note">${esc(at("note"))}</p>`;
+    <button type="submit" class="btn primary">${esc(at(reg?"go":"lGo"))}</button>
+    ${reg?`<p class="acc-sw">${esc(at("haveAcc"))} <button type="button" class="lrn-link" data-acc="min">${esc(at("lGo"))}</button></p>`
+      :`<p class="acc-sw">${esc(at("newAcc"))} <button type="button" class="lrn-link" data-acc="mreg">${esc(at("reg"))}</button></p><button type="button" class="lrn-link acc-forgot" data-acc="forgot">🔑 ${esc(at("forgot"))}</button>`}`;
   accEl().hidden=false; document.body.style.overflow="hidden";
   setTimeout(()=>{ const i=document.getElementById("acc-name"); if(i) i.focus(); },50);
 }
+/* PIN kataklari: 4 ta raqam, oxirgisi bir lahza ko‘rinadi */
+let ACC_PIN_T=null;
+function accPinPaint(show){ const w=document.querySelector("#acc-f .acc-pin"); if(!w) return; const v=w.querySelector("input").value; clearTimeout(ACC_PIN_T);
+  w.querySelectorAll("i").forEach((el,i)=>{ el.textContent=i<v.length?(show&&i===v.length-1?v[i]:"•"):""; el.classList.toggle("on",i<v.length); el.classList.toggle("cur",i===Math.min(v.length,3)); });
+  if(show) ACC_PIN_T=setTimeout(()=>accPinPaint(false),700); }
+document.addEventListener("input",e=>{ if(e.target.id!=="acc-pw"||!e.target.closest(".acc-pin")) return; const v=e.target.value.replace(/\D/g,"").slice(0,4); if(v!==e.target.value) e.target.value=v; accPinPaint(true);
+  if(v.length===4){ const st=document.getElementById("acc-st"); if(st&&st.className.includes("err")) st.textContent=""; } });
+/* Ism band-mi — yozayotganda tekshiramiz (faqat ro‘yxat rejimida) */
+let ACC_NT=null, ACC_NQ=0;
+function accNice(n){ return n===n.toLowerCase()?n.replace(/(^|\s)(\S)/g,(m,a,b)=>a+b.toUpperCase()):n; }
+document.addEventListener("input",e=>{ if(e.target.id!=="acc-name"||ACC_MODE!=="reg") return; clearTimeout(ACC_NT); const ns=document.getElementById("acc-nst"); if(ns){ ns.textContent=""; ns.className="acc-hint"; }
+  const name=accNice(e.target.value.replace(/\s+/g," ").trim()); if(name.length<2) return; const q=++ACC_NQ;
+  ACC_NT=setTimeout(async()=>{ const key=accKeyOf(name); let taken=!!accUsers()[key];
+    if(!taken&&CLOUD_ON){ try{ taken=!!(await fsGet("n/"+await cloudNameId(key))); }catch(er){} }
+    const n2=document.getElementById("acc-nst"); if(q!==ACC_NQ||!n2) return; if(taken){ n2.textContent=at("taken")(name); n2.className="acc-hint warn"; } },600); });
 function accMenu(){
   const f=document.getElementById("acc-f");
   f.innerHTML=`<div class="snd-h"><h2>👤</h2><button type="button" class="snd-x" data-acc="close" aria-label="✕">✕</button></div>
@@ -4250,14 +4358,16 @@ function accMigrate(key){
     ks.forEach(k=>{ const nk="u:"+key+":"+k; if(localStorage.getItem(nk)==null) localStorage.setItem(nk,localStorage.getItem(k)); }); }catch(e){}
 }
 document.addEventListener("change",e=>{ if(e.target.id==="acc-ok"){ const b=document.getElementById("acc-cont"); if(b) b.disabled=!e.target.checked; } });
+document.addEventListener("input",e=>{ if(e.target.id!=="acc-ref") return; const st=document.getElementById("acc-refst"); if(!st) return; const v=e.target.value.trim(); st.textContent=!v?"":hpRefOk(v)?"✓":"…"; });
 document.addEventListener("submit",async e=>{
   if(e.target.id!=="acc-f") return; e.preventDefault();
   if(document.getElementById("acc-cpw")){ cloudAskGo(); return; }
   const st=document.getElementById("acc-st"); if(!st) return;
-  const name=(document.getElementById("acc-name").value||"").replace(/\s+/g," ").trim(), pw=document.getElementById("acc-pw").value||"";
+  const name=accNice((document.getElementById("acc-name").value||"").replace(/\s+/g," ").trim()), pw=document.getElementById("acc-pw").value||"", isPin=!!document.querySelector("#acc-f .acc-pin");
   st.className="acc-st err";
-  if(name.length<3||!/\s/.test(name)){ st.textContent=at("eName"); document.getElementById("acc-name").focus(); return; }
-  if(pw.length<4){ st.textContent=at("ePw"); document.getElementById("acc-pw").focus(); return; }
+  if(name.length<2){ st.textContent=at("eName"); document.getElementById("acc-name").focus(); return; }
+  if(isPin?!/^\d{4}$/.test(pw):pw.length<4){ st.textContent=at(isPin?"ePin":"ePw"); document.getElementById("acc-pw").focus(); return; }
+  try{ const ri=document.getElementById("acc-ref"); if(ri){ const rc=hpRefOk(ri.value); if(ri.value.trim()&&!rc){ st.textContent=state.lang==="ru"?"Код друга: 6 символов (например DIL7K2)":"Do‘st kodi 6 belgi bo‘ladi (masalan DIL7K2)"; ri.focus(); return; } if(rc) localStorage.setItem("ref:by",rc); } }catch(err){}
   const U=accUsers(), key=accKeyOf(name), first=!Object.keys(U).length;
   if(U[key]){ const hh=await accHash(U[key].s+":"+pw); if(hh!==U[key].h){ st.textContent=at("eWrong"); document.getElementById("acc-pw").select(); return; }
     if(CLOUD_ON&&!U[key].c){ st.className="acc-st"; st.textContent=at("cChk"); try{ U[key].c=await cloudCap(key,pw); localStorage.setItem("acc:users",JSON.stringify(U)); }catch(err){} }
@@ -4286,16 +4396,41 @@ document.addEventListener("submit",async e=>{
 let ACC_SAVE=null, ACC_NEWOK=false;
 function accLev(a,b){ const d=Array.from({length:a.length+1},(_,i)=>[i]); for(let j=1;j<=b.length;j++) d[0][j]=j;
   for(let i=1;i<=a.length;i++) for(let j=1;j<=b.length;j++) d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); return d[a.length][b.length]; }
-function accSaveScreen(name,pw,done){ ACC_SAVE=done; const f=document.getElementById("acc-f");
-  f.innerHTML=`<div class="snd-h"><h2>${esc(at("saveT"))}</h2></div>
-    <p class="acc-lead">${esc(at("saveL"))}</p>
-    <div class="acc-cred"><div><small>${esc(at("login"))}</small><b>${esc(name)}</b></div><div><small>${esc(at("pw"))}</small><b class="mono">${esc(pw)}</b></div></div>
-    <div class="ch-btns"><button type="button" class="btn" data-acc="ccopy" data-t="${esc(at("tgText")(name,pw))}">${esc(at("copy"))}</button>
-      <a class="btn" target="_blank" rel="noopener" href="https://t.me/share/url?url=${encodeURIComponent(CH_SITE)}&text=${encodeURIComponent(at("tgText")(name,pw))}">${esc(at("tg"))}</a></div>
-    <p class="acc-note">${esc(at("shot"))}</p>
-    <label class="acc-chk"><input type="checkbox" id="acc-ok"> ${esc(at("chk"))}</label>
-    <button type="button" class="btn primary" data-acc="saved" id="acc-cont" disabled>${esc(at("cont"))}</button>`;
-  accEl().hidden=false; document.body.style.overflow="hidden"; }
+let ACC_SHOT=null;
+function accSaveScreen(name,pw,done){ ACC_SAVE=done; ACC_SHOT=null; const f=document.getElementById("acc-f"), pin=/^\d{4}$/.test(pw), pv=pin?pw.split("").join(" "):pw;
+  f.innerHTML=`<div class="snd-h"><h2>${esc(at("done")(name.split(" ")[0]))}</h2></div>
+    <div class="acc-save"><p>${esc(at("keep"))}</p>
+      <div class="acc-cred"><div><small>${esc(at("login"))}</small><b>${esc(name)}</b></div><div><small>${esc(pin?at("pinL"):at("pw"))}</small><b class="mono">${esc(pv)}</b></div></div>
+      <button type="button" class="btn primary acc-shot" data-acc="shot">${esc(at("shotB"))}</button>
+      <div class="acc-shst" id="acc-shst"></div>
+      <img id="acc-shimg" alt="" hidden>
+      <p class="acc-note">${esc(at("shotHint"))}</p></div>
+    <button type="button" class="btn" data-acc="saved" id="acc-cont" disabled>${esc(at("cont"))}</button>
+    <button type="button" class="lrn-link acc-forgot" data-acc="skip">${esc(at("skip"))}</button>`;
+  accEl().hidden=false; document.body.style.overflow="hidden";
+  accShotMake(name,pv,pin).then(r=>{ ACC_SHOT=r; }).catch(()=>{}); }
+/* Kirish ma’lumotlari rasmi (PNG) — oldindan tayyorlanadi, chunki iPhone’da ulashish bosilgan zahoti chaqirilishi kerak */
+async function accShotMake(name,pv,pin){ try{ await document.fonts.load('800 80px Nunito'); }catch(e){}
+  const c=document.createElement("canvas"); c.width=1080; c.height=1080; const x=c.getContext("2d"), F="Nunito,system-ui,sans-serif";
+  const g=x.createLinearGradient(0,0,1080,1080); g.addColorStop(0,"#1F4FA0"); g.addColorStop(1,"#12305F"); x.fillStyle=g; x.fillRect(0,0,1080,1080);
+  x.fillStyle="#fff"; x.beginPath(); if(x.roundRect) x.roundRect(90,250,900,560,48); else x.rect(90,250,900,560); x.fill();
+  x.textAlign="center"; x.fillStyle="#fff"; x.font="700 44px "+F; x.fillText("🔑 "+at("imgT"),540,165);
+  const fit=(t,max,px,w)=>{ let p=px; do{ x.font=w+" "+p+"px "+F; p-=4; }while(x.measureText(t).width>max&&p>30); };
+  x.fillStyle="#667085"; x.font="700 40px "+F; x.fillText(at("imgName"),540,350);
+  x.fillStyle="#1d2433"; fit(name,800,92,"800"); x.fillText(name,540,450);
+  x.fillStyle="#667085"; x.font="700 40px "+F; x.fillText(pin?at("pinL"):at("pw"),540,560);
+  x.fillStyle="#1F4FA0"; fit(pv,800,130,"900"); x.fillText(pv,540,700);
+  x.fillStyle="rgba(255,255,255,.9)"; x.font="600 36px "+F; x.fillText(at("imgHow"),540,900); x.font="600 32px "+F; x.fillText(new Date().toLocaleDateString("ru-RU"),540,960);
+  const blob=await new Promise(r=>c.toBlob(r,"image/png")); return {blob,url:URL.createObjectURL(blob),file:new File([blob],"streber-kirish.png",{type:"image/png"})}; }
+async function accShot(btn){ const st=document.getElementById("acc-shst"), im=document.getElementById("acc-shimg"), cont=document.getElementById("acc-cont");
+  let r=ACC_SHOT; let ok=false;
+  if(r&&appIOS()&&navigator.canShare&&navigator.canShare({files:[r.file]})){ try{ await navigator.share({files:[r.file]}); ok=true; }catch(e){ ok=false; } }
+  else{ if(!r){ const c=document.querySelector("#acc-f .acc-cred"), b=c?c.querySelectorAll("b"):[]; try{ r=ACC_SHOT=await accShotMake(b[0].textContent,b[1].textContent,/^\d( \d){3}$/.test(b[1].textContent)); }catch(e){} }
+    if(r){ try{ const a=document.createElement("a"); a.href=r.url; a.download="streber-kirish.png"; document.body.appendChild(a); a.click(); a.remove(); ok=true; }catch(e){} } }
+  if(r&&im){ im.src=r.url; im.hidden=false; }
+  if(st){ st.textContent=at(ok?"shotOk":"shotNo"); st.className="acc-shst "+(ok?"ok":"no"); }
+  if(cont){ cont.disabled=false; cont.classList.add("primary"); } btn.classList.remove("primary");
+  try{ actEv("reg","shot"+(ok?"":"0")); }catch(e){} }
 function accForgot(){ const f=document.getElementById("acc-f"), nm=(document.getElementById("acc-name")||{}).value||"";
   f.innerHTML=`<div class="snd-h"><h2>${esc(at("rT"))}</h2></div><p class="acc-lead">${esc(at("rL"))}</p>
     <label class="acc-lb">${esc(at("name"))}<input id="acc-rname" maxlength="40" value="${esc(nm)}" placeholder="${esc(at("namePh"))}"></label>
@@ -4326,16 +4461,18 @@ async function accReset(){ const st=document.getElementById("acc-rst"), name=(do
     if(CLOUD_ON){ try{ U2[key].c=await cloudCap(key,pw); localStorage.removeItem("cloud:h:"+key); }catch(err){} }
     try{ localStorage.setItem("acc:users",JSON.stringify(U2)); localStorage.setItem("acc:cur",key); }catch(err){} location.reload(); }); }
 document.addEventListener("click",e=>{
-  const lg=e.target.closest("[data-acclang]"); if(lg){ const b=document.getElementById("lang-"+lg.dataset.acclang); if(b) b.click(); const nm=document.getElementById("acc-name"), v=nm?nm.value:""; accLogin(); const n2=document.getElementById("acc-name"); if(n2) n2.value=v; return; }
-  const an=e.target.closest("[data-accnm]"); if(an){ const i=document.getElementById("acc-name"); if(i){ i.value=an.dataset.accnm; const st=document.getElementById("acc-st"); if(st){ st.textContent=""; } const pw=document.getElementById("acc-pw"); if(pw) pw.focus(); } return; }
+  const lg=e.target.closest("[data-acclang]"); if(lg){ const b=document.getElementById("lang-"+lg.dataset.acclang); if(b) b.click(); const nm=document.getElementById("acc-name"), v=nm?nm.value:""; accLogin(document.getElementById("acc-cont")?undefined:ACC_MODE); const n2=document.getElementById("acc-name"); if(n2) n2.value=v; return; }
+  const an=e.target.closest("[data-accnm]"); if(an){ if(ACC_MODE==="reg") accLogin("in"); const i=document.getElementById("acc-name"); if(i){ i.value=an.dataset.accnm; const st=document.getElementById("acc-st"); if(st){ st.textContent=""; } const pw=document.getElementById("acc-pw"); if(pw) pw.focus(); } return; }
   const a=e.target.closest("[data-acc]"); if(a){ const k=a.dataset.acc;
     if(k==="eye"){ const p=document.getElementById("acc-pw"); p.type=p.type==="password"?"text":"password"; }
     else if(k==="close"){ accEl().hidden=true; document.body.style.overflow=document.querySelector(".lrn:not([hidden])")?"hidden":""; }
     else if(k==="newok"){ ACC_NEWOK=true; document.getElementById("acc-f").requestSubmit(); }
-    else if(k==="forgot") accForgot(); else if(k==="rback") accLogin(); else if(k==="rgo") accReset();
+    else if(k==="forgot") accForgot(); else if(k==="rback") accLogin("in"); else if(k==="rgo") accReset();
     else if(k==="cgo") cloudAskGo(); else if(k==="ceye"){ const p=document.getElementById("acc-cpw"); if(p) p.type=p.type==="password"?"text":"password"; }
     else if(k==="clater"){ try{ sessionStorage.setItem("cloud:later","1"); }catch(err){} accEl().hidden=true; document.body.style.overflow=""; }
-    else if(k==="saved"){ if(document.getElementById("acc-ok").checked && ACC_SAVE) ACC_SAVE(); }
+    else if(k==="saved"||k==="skip"){ if(ACC_SAVE){ const d=ACC_SAVE; ACC_SAVE=null; d(); } }
+    else if(k==="shot") accShot(a);
+    else if(k==="min"||k==="mreg"){ const v=(document.getElementById("acc-name")||{}).value||""; accLogin(k==="min"?"in":"reg"); const n2=document.getElementById("acc-name"); if(n2){ n2.value=v; if(v) (document.getElementById("acc-pw")||n2).focus(); } }
     else if(k==="ccopy"){ const t=a.dataset.t; (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{ a.textContent=at("copied"); }).catch(()=>{ prompt("",t); }); }
     else if(k==="out"){ try{ localStorage.removeItem("acc:cur"); }catch(err){} location.reload(); }
     return; }
@@ -4383,6 +4520,7 @@ function accLern(){
 }
 const ACC_OK=(()=>{ try{ localStorage.setItem("acc:t","1"); localStorage.removeItem("acc:t"); return true; }catch(e){ return false; } })();
 accChip();
+setTimeout(()=>{ try{ cmBtn(); }catch(e){} },300);
 /* 🎚 Daraja: ro'yxatdan o'tgan o'quvchidan bir marta so'raladi — tanlangan daraja ochiladi (2026-10-21, Otabek) */
 function lvlAsk(){ const f=document.getElementById("acc-f"), ru=state.lang==="ru";
   const L=[["a11","A1.1",ru?"Только начинаю":"Endi boshlayapman"],["a12","A1.2",""],["a21","A2.1",""],["a22","A2.2",""],["b11","B1.1",""],["b12","B1.2",""]];
@@ -4394,15 +4532,17 @@ function lvlAsk(){ const f=document.getElementById("acc-f"), ru=state.lang==="ru
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-lvl]"); if(!b) return; const k=b.dataset.lvl; if(!TABS[k]) return;
   store.set("lvl",k); store.set("tab2",k); state.tab=k; state.q=""; try{ document.getElementById("q").value=""; }catch(er){} accEl().hidden=true; document.body.style.overflow=""; try{ render(); }catch(er){} try{ actEv("lvl",k); }catch(er){} });
 /* 👋 Birinchi kirgan odamga — saytning hamma imkoniyatlari bir oynada (2026-10-21, Otabek: «umuman hamma imkoniyatlar haqida gapirish kerak») */
-function welcomeShow(){ const f=document.getElementById("acc-f"), ru=state.lang==="ru";
-  const L=ru?[["📘","Уроки","к каждому уроку упражнения: грамматика, слова, диалоги, аудирование, чтение, говорение, произношение. Нажмите на урок — он раскроется."],["🧠","Учить слова","слова шаг за шагом: сначала узнаёте, потом пишете сами."],["💬","Общение","готовые фразы для разговора — тренируйте их."],["🏆","Рейтинг и игры","выученные слова идут в рейтинг; челленджи и игры с друзьями."],["💡 i ?","Кнопки помощи","💡 — подсказка, i — правило этого упражнения, ? — почему ответ неверный."],["👎","Нашли ошибку?","нажмите — сделаем снимок экрана, и я исправлю."],["📲","Приложение","установите сайт на телефон — откроется как приложение."]]
-    :[["📘","Lektionlar","har bir Lektion uchun mashqlar: grammatika, so‘zlar, muloqot, tinglash, o‘qish, gapirish, talaffuz. Lektionni bosing — ochiladi."],["🧠","So‘z yodlash","so‘zlar bosqichma-bosqich: avval tanib olasiz, keyin o‘zingiz yozasiz."],["💬","Muloqot","gaplashish uchun tayyor iboralar — ularni mashq qiling."],["🏆","Reyting va o‘yinlar","o‘rgangan so‘zlaringiz reytingga qo‘shiladi; do‘stlar bilan challenge va o‘yinlar."],["💡 i ?","Yordam tugmalari","💡 — maslahat, i — shu mashqning qoidasi, ? — javob nega xato."],["👎","Xato topdingizmi?","bosing — ekran rasmi olinadi, men tuzataman."],["📲","Ilova","saytni telefonga o‘rnating — ilova kabi ochiladi."]];
+function welcomeShow(){ const f=document.getElementById("acc-f"), ru=state.lang==="ru"; /* 2026-10-23: qisqa — 4 ta katak, tugmalar ko'rinib turadi */
+  const rf=hpRefOk(localStorage.getItem("ref:by")||""), mr=typeof mrActive==="function"&&mrOn()&&mrActive();
+  const L=ru?[["📘","Уроки","упражнения к каждому уроку"],["🧠","Учить слова","шаг за шагом"],["🏆","Рейтинг и игры","с друзьями"],mr?["📣","Марафон","призы до 15 ноября"]:["💬","Общение","готовые фразы"]]
+    :[["📘","Lektionlar","har biriga mashqlar"],["🧠","So‘z yodlash","bosqichma-bosqich"],["🏆","Reyting va o‘yinlar","do‘stlar bilan"],mr?["📣","Marafon","15-noyabrgacha sovrinlar"]:["💬","Muloqot","tayyor iboralar"]];
   f.innerHTML=`<div class="snd-h"><h2>👋 ${ru?"Добро пожаловать!":"Xush kelibsiz!"}</h2><span class="wl-lg"><button type="button" data-wllang="uz" aria-pressed="${!ru}">UZ</button><button type="button" data-wllang="ru" aria-pressed="${ru}">RU</button></span></div>
-    <p class="acc-lead">${ru?"Что здесь есть — коротко:":"Bu yerda nimalar bor — qisqacha:"}</p>
-    <div class="wl-l">${L.map(([i,t,d])=>`<div class="wl-r"><span class="wl-i">${i}</span><div><b>${esc(t)}</b> — ${esc(d)}</div></div>`).join("")}</div>
-    <div class="reg-free">🎁 ${ru?"Сейчас всё бесплатно":"Hozircha hammasi bepul"}</div>
-    <button type="button" class="btn primary" data-wl="tour" data-tourgo style="width:100%;margin-top:6px">🧭 ${ru?"Экскурсия по сайту (1 минута)":"Sayt bo‘ylab sayohat (1 daqiqa)"}</button>
-    <button type="button" class="lrn-link" data-wl="ok" style="width:100%;margin-top:4px">${ru?"Сам посмотрю →":"O‘zim ko‘raman →"}</button>`;
+    ${rf?`<div class="acc-gift">🎁 ${ru?"Вас пригласил друг":"Do‘stingiz sizni taklif qildi"}</div>`:""}
+    <p class="acc-lead">${ru?"Немецкий A1–B1: упражнения, слова, игры.":"Nemis tili A1–B1: mashqlar, so‘zlar, o‘yinlar."}</p>
+    <div class="wl-g">${L.map(([i,t,d])=>`<div class="wl-t"><i>${i}</i><b>${esc(t)}</b><span>${esc(d)}</span></div>`).join("")}</div>
+    <p class="acc-note">💡 i ? — ${ru?"подсказки в упражнениях":"mashqlardagi yordam"} · 👎 — ${ru?"нашли ошибку? нажмите":"xato topsangiz bosing"} · 🎁 ${ru?"всё бесплатно":"hammasi bepul"}</p>
+    <button type="button" class="btn primary" data-wl="tour" data-tourgo style="width:100%">🧭 ${ru?"Экскурсия по сайту (1 минута)":"Sayt bo‘ylab sayohat (1 daqiqa)"}</button>
+    <button type="button" class="lrn-link" data-wl="ok" style="width:100%;margin-top:-4px">${ru?"Сам посмотрю →":"O‘zim ko‘raman →"}</button>`;
   accEl().hidden=false; document.body.style.overflow="hidden"; }
 document.addEventListener("click",e=>{ const lg=e.target.closest("[data-wllang]"); if(lg){ const b=document.getElementById("lang-"+lg.dataset.wllang); if(b) b.click(); setTimeout(welcomeShow,0); return; } });
 document.addEventListener("toggle",e=>{ const d=e.target; if(d&&d.classList&&d.classList.contains("pt-box")) try{ localStorage.setItem("pt:open",d.open?"1":"0"); }catch(er){} },true);
@@ -4519,7 +4659,7 @@ function duCount(){ if(DU.phase==="count"||DU.phase==="play") return; DU.phase="
   tick(); }
 function duPlay(){
   const c=Object.assign({},DU.c,{r:(DU.c.r+DU.r*7919)>>>0}); DU.qs=chQuestions(c);
-  Object.assign(DU,{phase:"play",st:"play",s:0,lt:0,qi:0,t0:performance.now(),hp:3,cb:0,oCb:0}); duPub();
+  Object.assign(DU,{phase:"play",st:"play",s:0,okN:0,lt:0,qi:0,t0:performance.now(),hp:3,cb:0,oCb:0}); duPub();
   duEl().innerHTML=duHead(`<span class="ch-time" id="du-time">${duLim()}</span>`)+`<div class="lrn-body">
     <div class="ch-bar"><i id="du-tb" style="width:100%"></i></div>
     <div id="du-score"></div>
@@ -4541,14 +4681,14 @@ function duScore(){ const e=document.getElementById("du-score"); if(e) e.innerHT
 function duQ(){ const q=DU.qs[DU.qi%DU.qs.length]; DU.cur=q; DU.lock=false; DU.qT=performance.now(); const card=document.getElementById("du-card"); if(!card) return; const t=document.getElementById("du-time"); if(t) t.textContent=duLim();
   card.innerHTML=`<div class="du-lim">${DU.qi+1} / 15 · ⏱ ${duLim()} s${duMult()>1?` · <b class="du-cbp">🔥×${duMult()}</b>`:""}</div><div class="ch-q">${esc(q.q)}</div><div class="lrn-ask">${esc(DU.c.x?(state.lang==="ru"?"Выберите правильный ответ":"To‘g‘ri javobni tanlang"):dt("choose"))}</div><div class="lrn-opts">${q.o.map((o,k)=>`<button type="button" class="lrn-opt" data-duo="${k}"><span class="k">${k+1}</span>${esc(o)}</button>`).join("")}</div>`; }
 function duAnswer(k){ if(DU.phase!=="play"||DU.lock) return; DU.lock=true; const q=DU.cur, ok=k>=0&&q.o[k]===q.a, card=document.getElementById("du-card");
-  if(ok){ const left=Math.max(0,duLim()-(performance.now()-DU.qT)/1000), was=duMult(); DU.cb=(DU.cb||0)+1; const pts=Math.round((100+left*20)*was); DU.s+=pts; DU.lt=Math.round(performance.now()-DU.t0); const pp=document.createElement("div"); pp.className="ch-pts"; pp.textContent="+"+pts+(was>1?" 🔥":""); card.appendChild(pp); }
+  if(ok){ const left=Math.max(0,duLim()-(performance.now()-DU.qT)/1000), was=duMult(); DU.cb=(DU.cb||0)+1; DU.okN=(DU.okN||0)+1; const pts=Math.round((100+left*20)*was); DU.s+=pts; DU.lt=Math.round(performance.now()-DU.t0); const pp=document.createElement("div"); pp.className="ch-pts"; pp.textContent="+"+pts+(was>1?" 🔥":""); card.appendChild(pp); }
   else { DU.cb=0; DU.hp=Math.max(0,(DU.hp==null?3:DU.hp)-1); if(navigator.vibrate) try{ navigator.vibrate(60); }catch(e){} }
   card.querySelectorAll(".lrn-opt").forEach((b,j)=>{ b.disabled=true; if(q.o[j]===q.a) b.classList.add("ok"); else if(j===k) b.classList.add("bad"); });
   card.classList.remove("ch-flash-ok","ch-flash-bad"); void card.offsetWidth; card.classList.add(ok?"ch-flash-ok":"ch-flash-bad");
   duPub(); duSelf(); duScore();
   if(DU.hp<=0||DU.qi+1>=15){ setTimeout(()=>{ if(DU.phase==="play") duEnd(); },700); return; } /* 15 savol (2026-10-22, Otabek) */
   setTimeout(()=>{ if(DU.phase!=="play") return; DU.qi++; duQ(); }, ok?250:750); }
-function duEnd(){ if(DU.phase!=="play") return; try{ actEv("game","du"); }catch(e){} try{ gpAdd("du",(DU.id||"")+":"+DU.r,Math.round((DU.s|0)/20)); }catch(e){} DU.phase="end"; DU.st="done"; DU.rd=false; DU.h[DU.r]=[DU.s,DU.lt]; try{ actLog("du","du","⚔️ Duel",DU.s,0); }catch(e){} const ks=Object.keys(DU.h).map(Number).sort((a,b)=>b-a); ks.slice(3).forEach(k=>delete DU.h[k]); duPub(); duRender(); }
+function duEnd(){ if(DU.phase!=="play") return; try{ actEv("game","du"); }catch(e){} try{ gpAdd("du",(DU.id||"")+":"+DU.r,Math.round((DU.s|0)/20)); }catch(e){} DU.phase="end"; DU.st="done"; DU.rd=false; DU.h[DU.r]=[DU.s,DU.lt]; try{ actLog("du","du","⚔️ Duel · "+(DU.s|0)+" ball",DU.okN|0,DU.qi|0); /* avval ball «so'z» deb yozilardi (2026-10-23) */ }catch(e){} const ks=Object.keys(DU.h).map(Number).sort((a,b)=>b-a); ks.slice(3).forEach(k=>delete DU.h[k]); duPub(); duRender(); }
 function duRes(p,R){ const x=p.h&&p.h[R]; if(x) return {s:x[0]|0,lt:+x[1]||0}; if(p.r===R&&p.st==="done") return {s:p.s,lt:p.lt}; return null; }
 function duResult(R){ const L=duPlayers(); if(L.length<2) return null; R=R||DU.r; const ra=duRes(L[0],R), rb=duRes(L[1],R);
   if(!ra||!rb) return {wait:true}; const a={...L[0],...ra}, b={...L[1],...rb};
@@ -4665,7 +4805,7 @@ function dcAnswer(k){ if(DC.phase!=="play"||DC.lock) return; DC.lock=true; const
   const sc=document.getElementById("dc-score"); if(sc) sc.textContent="⚡ "+DC.s;
   setTimeout(()=>{ if(DC.phase!=="play") return; DC.qi++; dcQ(); }, ok?250:750); }
 function dcFinish(){ if(DC.phase!=="play") return; clearInterval(DC.tm); DC.phase="end"; while(DC.g.length<DC.qs.length) DC.g.push(0);
-  DC.res={s:DC.s,ok:DC.ok,g:DC.g.slice(),t:Date.now()}; try{ actLog("dc","dc:"+DC.lvl,"⚡ Kunlik challenge · "+DC.lvl,DC.ok,DC.qs.length); }catch(e){} try{ localStorage.setItem(dcKey(DC.lvl,DC.day),JSON.stringify(DC.res)); }catch(e){} dcPub(); dcEnd(); try{ progRender(); }catch(e){} }
+  DC.res={s:DC.s,ok:DC.ok,g:DC.g.slice(),t:Date.now()}; try{ actEv("game","dc"); }catch(e){} try{ actLog("dc","dc:"+DC.lvl,"⚡ Kunlik challenge · "+DC.lvl,DC.ok,DC.qs.length); }catch(e){} try{ localStorage.setItem(dcKey(DC.lvl,DC.day),JSON.stringify(DC.res)); }catch(e){} dcPub(); dcEnd(); try{ progRender(); }catch(e){} }
 function dcShareText(){ const r=DC.res, st=dcStreak(DC.lvl), uz=state.lang!=="ru"; const grid=r.g.map(x=>x?"🟩":"🟥").join(""); return `Streber #${dcNo(DC.day)} · ${DC.lvl}\n${grid}\n${r.ok}/10 ⚡${r.s}${st>1?` · 🔥${st} ${uz?"kun":"дн."}`:""}`; }
 function dcLink(){ return (/github\.io$/.test(location.hostname)||!/claude/.test(location.hostname)&&location.protocol!=="file:" ? location.origin+location.pathname : CH_SITE)+"?dc="+DC.lvl; }
 function dcEnd(){ const uz=state.lang!=="ru", r=DC.res, st=dcStreak(DC.lvl), E=r.ok>=9?"🏆":r.ok>=7?"🔥":r.ok>=5?"💪":"🌱";
@@ -4697,63 +4837,236 @@ function gpGet(){ const o=gpRaw(), cw=gpWeek(), pw=gpPrevWeek(); if(o.w===cw) re
 function gpAdd(kind,id,pts){ try{ if(window.BLITZ||!ACC.cur||!(pts>0)) return; const o=gpRaw(), wk=gpWeek(); o.d=o.d||{}; const key=kind+":"+id; if(o.d[key]) return; o.d[key]=1; const ks=Object.keys(o.d); if(ks.length>300) delete o.d[ks[0]];
   if(o.w!==wk){ if(o.w===gpPrevWeek()){ o.pw=o.w; o.pp=o.p|0; } else { o.pw=""; o.pp=0; } o.w=wk; o.p=0; } o.p=(o.p|0)+Math.round(pts); localStorage.setItem("gp:"+ACC.cur,JSON.stringify(o)); cloudDirty(); }catch(e){} }
 /* ===== 🏅 Saytga hissa — ballar va darajalar (2026-10-22, Otabek): 👎 +1 · 📤 ulashish +1 · 👥 do'st +3 (100 so'zdan keyin +5) · ⚡ Challenge'da yangi odam +2 · 🎓 ustoz rahmati +5 ===== */
-const HP_LV=[[0,"","",""],[1,"🔧","Xato tuzatuvchi","Исправитель ошибок"],[10,"🤝","Yordamchi","Помощник"],[25,"📣","Tarqatuvchi","Распространитель"],[60,"👑","Afsonaviy yordamchi","Легендарный помощник"]];
+const HP_LV=[[0,"","",""],[1,"🌱","Boshlovchi","Новичок"],[10,"🤝","Yordamchi","Помощник"],[25,"📣","Tarqatuvchi","Распространитель"],[60,"👑","Afsonaviy yordamchi","Легендарный помощник"]];
 function hpLv(p){ p=p|0; let k=0; HP_LV.forEach((x,i)=>{ if(p>=x[0]&&(i>0||p>0)) k=i; }); return p>0?k:0; }
-function hpBadge(p,small){ const k=hpLv(p); if(!k) return ""; const L=HP_LV[k], ru=state.lang==="ru"; return `<i class="hp-b hp${k}${small?" sm":""}" title="${esc(ru?L[3]:L[2])} · ${p|0}">${L[1]}${small?"":" "+esc(ru?L[3]:L[2])}</i>`; }
-function hpBadgeLv(k,small){ k=k|0; if(!k||!HP_LV[k]) return ""; const L=HP_LV[k], ru=state.lang==="ru"; return `<i class="hp-b hp${k}${small?" sm":""}" title="${esc(ru?L[3]:L[2])}">${L[1]}${small?"":" "+esc(ru?L[3]:L[2])}</i>`; }
+function hpBadge(p,small,x){ const k=hpLv(p); if(!k) return ""; const L=HP_LV[k], ru=state.lang==="ru"; x=x||{}; return `<i class="hp-b hp${k}${small?" sm":""}" data-hpk="${k}" data-hpp="${p|0}"${x.nm?` data-hpn="${esc(x.nm)}"`:""}${x.hb?` data-hpc="${esc(typeof x.hb==="string"?x.hb:JSON.stringify(x.hb))}"`:""} title="${esc(ru?L[3]:L[2])} · ${p|0}">${L[1]}${small?"":" "+esc(ru?L[3]:L[2])}</i>`; }
+function hpBadgeLv(k,small){ k=k|0; if(!k||!HP_LV[k]) return ""; const L=HP_LV[k], ru=state.lang==="ru"; return `<i class="hp-b hp${k}${small?" sm":""}" data-hpk="${k}" title="${esc(ru?L[3]:L[2])}">${L[1]}${small?"":" "+esc(ru?L[3]:L[2])}</i>`; }
 function hpMyLv(){ return hpLv(hpPts()); }
 function hpGet(){ try{ return JSON.parse(localStorage.getItem(accK("hp"))||"null")||{p:0,ev:[],day:{},seen:[]}; }catch(e){ return {p:0,ev:[],day:{},seen:[]}; } }
 function hpSave(o){ try{ localStorage.setItem(accK("hp"),JSON.stringify(o)); }catch(e){} try{ cloudDirty(); }catch(e){} }
 function hpPts(){ return ACC.cur?hpGet().p|0:0; }
+/* hissa bo'yicha ballar (kim nima uchun unvon olgan — reytingda hammaga ko'rinadi, 2026-10-22) */
+function hpCnt(){ if(!ACC.cur) return null; const o=hpGet(); if(!o.c){ o.c={}; (o.ev||[]).forEach(x=>{ o.c[x[1]]=(o.c[x[1]]|0)+(x[2]|0); }); const sum=Object.values(o.c).reduce((a,b)=>a+b,0); if((o.p|0)>sum) o.c.old=(o.p|0)-sum; try{ localStorage.setItem(accK("hp"),JSON.stringify(o)); }catch(e){} } return o.c; }
+const HP_KN={ref:["👥 Do‘stlarini olib keldi","👥 Привёл друзей",2],r100:["🎓 Do‘sti 100 so‘z o‘rgandi","🎓 Друг выучил 100 слов",6],vis:["🔗 Linkini ochishdi","🔗 Открыли ссылку",1],vapp:["📲 Link orqali ilova o‘rnatildi","📲 Установили приложение по ссылке",4],ch:["⚡ Challenge’ida boshqalar o‘ynadi","⚡ В его Challenge играли",2],share:["📤 Natijasini ulashdi","📤 Делился результатами",1],fb:["👎 Xato topdi","👎 Нашёл ошибки",1],th:["🎓 Ustoz rahmat dedi","🎓 Спасибо от учителя",5],app:["📲 Ilovani o‘rnatdi","📲 Установил приложение",2],old:["🏅 Avvalgi hissa","🏅 Прежний вклад",0]};
+function hpHowHTML(ru){ return `<div class="hp-how2"><div><span>${ru?"👥 Друг зарегистрировался по вашей ссылке":"👥 Do‘stingiz sizning linkingiz orqali ro‘yxatdan o‘tdi"}</span><em>+2</em></div><div><span>${ru?"🎓 Пришедший через вас выучил 100 слов":"🎓 Siz orqali qo‘shilgan odam 100 so‘z o‘rgandi"}</span><em>+6</em></div><div><span>${ru?"🔗 Кто-то открыл вашу ссылку / QR":"🔗 Kimdir linkingiz / QR’ni ochdi"}</span><em>+1</em></div><div><span>${ru?"📲 Он установил приложение":"📲 U ilovani o‘rnatdi"}</span><em>+4</em></div><div><span>${ru?"⚡ Друг сыграл в вашем Challenge":"⚡ Do‘stingiz sizning challenge’ingizda o‘ynadi"}</span><em>+2</em></div><div><span>${ru?"📲 Установили приложение":"📲 Ilovani o‘rnatdingiz"}</span><em>+2</em></div><div><span>${ru?"📤 Поделились результатом":"📤 Natijangizni ulashdingiz"}</span><em>+1</em></div><div><span>${ru?"👎 Нашли ошибку (учитель подтвердил)":"👎 Xato topdingiz (ustoz tasdiqlasa)"}</span><em>+1</em></div><div><span>${ru?"🎓 Учитель сказал спасибо":"🎓 Ustoz «rahmat» dedi"}</span><em>+5</em></div></div>`; }
+function hpLvsHTML(ru,cur){ return `<div class="hp-lvs">${HP_LV.slice(1).map((L,i)=>`<i class="hp-b hp${i+1}${cur===i+1?" cur":""}" style="margin:0">${L[1]} ${esc(ru?L[3]:L[2])}</i><span>${L[0]} ${ru?"балл":"ball"}${i===3?(ru?" + бонус в недельном рейтинге":" + haftalik reytingga bonus"):""}${ru?` <small>· ${esc(L[2])}</small>`:` <small>· ${esc(L[3])}</small>`}</span>`).join("")}</div>`; }
+function hpSheet(html){ let o=document.getElementById("hp-ov"); if(!o){ o=document.createElement("div"); o.id="hp-ov"; o.className="hp-ov"; o.addEventListener("click",e=>{ if(e.target===o||e.target.closest("[data-hpx]")) o.hidden=true; }); document.body.appendChild(o); } o.innerHTML=`<div class="hp-sh"><div class="bar"></div>${html}</div>`; o.hidden=false; }
+/* birinchi kirganda (bir marta) — unvonlar qanday olinadi */
+function hpIntro(force){ const ru=state.lang==="ru"; if(!force){ if(!ACC.cur||window.BLITZ||IN_ARTIFACT) return; try{ if(localStorage.getItem("hp:intro")) return; }catch(e){} } try{ localStorage.setItem("hp:intro","1"); }catch(e){}
+  hpSheet(`<h4>🏅 ${ru?"Звания — помогите сайту расти":"Unvonlar — saytni tarqatishga yordam bering"}</h4><p class="mu">${ru?"Нашли ошибку, поделились результатом или привели друга — копятся баллы. Баллы превращаются в звание, звание видно всем рядом с вашим именем.":"Xato topsangiz, natijangizni ulashsangiz yoki do‘stingizni olib kelsangiz — ball to‘planadi. Ball unvonga aylanadi, unvon ismingiz yonida hammaga ko‘rinadi."}</p>${hpLvsHTML(ru,hpMyLv())}<p><b>${ru?"Как получить баллы":"Qanday ball olinadi"}</b></p>${hpHowHTML(ru)}<div class="ch-btns"><button type="button" class="btn primary" data-hpref="share">📤 ${ru?"Моя ссылка — отправить другу":"Mening linkim — do‘stga yuborish"}</button><button type="button" class="btn" data-hpx="1">${ru?"Понятно":"Tushunarli"}</button></div><p class="mu">${ru?"Позже: 👤 Профиль → 🏅 Вклад в сайт → «Как получить?»":"Keyin ham: 👤 Profil → 🏅 Saytga hissa → «Qanday olinadi?»"}</p>`);
+  hpCardBind(document.getElementById("hp-ov")); }
+/* unvonga bosganda — kim, nima uchun */
+function hpPop(el){ const ru=state.lang==="ru", k=+(el.dataset.hpk||0); if(!k) return; const L=HP_LV[k], nx=HP_LV[k+1], p=+(el.dataset.hpp||0), nm=el.dataset.hpn||""; let c=null; try{ c=JSON.parse(el.dataset.hpc||"null"); }catch(e){}
+  /* 2026-10-23: tushunarliroq — katta ball, «nimadan», 4 pog'ona, «yana N ball» */
+  const me=!!ACC.cur&&(nm?(nm===rkName()||nm===ACC.name):p===hpPts()), N=X=>esc(ru?X[3]:X[2]);
+  if(!c&&me){ try{ c=hpCnt(); }catch(e){} }
+  const why=c?Object.entries(c).filter(([x,v])=>v>0&&HP_KN[x]).sort((a,b)=>b[1]-a[1]).map(([x,v])=>{ const K=HP_KN[x], n=K[2]?Math.round(v/K[2]):0; return `<div class="hp-r"><span>${esc(ru?K[1]:K[0])}${n>1?` · ${n} ${ru?"раз":"ta"}`:""}</span><em>+${v}</em></div>`; }).join(""):"";
+  const lad=HP_LV.slice(1).map((X,i)=>`<div class="hp-st ${i+1<k?"done":i+1===k?"done now":"lock"}"><b>${X[1]}</b><span>${N(X)}</span>${X[0]}+</div>`).join("");
+  const prev=L[0]||0, pct=nx?Math.max(4,Math.min(100,Math.round((p-prev)/(nx[0]-prev)*100))):100;
+  const prog=nx?`<div class="hp-pr"><div class="t"><span>${ru?"До ":""}${nx[1]} ${N(nx)}${ru?"":" gacha"}</span><b>${p} / ${nx[0]} · ${ru?`ещё ${nx[0]-p}`:`yana ${nx[0]-p} ball`}</b></div><i><b style="width:${pct}%"></b></i></div>`:`<p class="mu">👑 ${ru?"Высшее звание!":"Eng yuqori unvon!"}</p>`;
+  hpSheet(`<div class="hp-hd"><div class="hp-ic">${L[1]}</div><div class="hp-who"><b>${N(L)}</b><small>${nm?esc(nm):me?esc(rkName()):""}${me?` ${ru?"(вы)":"(siz)"}`:""}</small></div><div class="hp-pts"><b>${p}</b><small>${ru?"балл":"ball"}</small></div></div>
+    ${why?`<div class="hp-box"><h5>${ru?"За что баллы":"Ballar nimadan"}</h5>${why}</div>`:""}
+    <div class="hp-lad" lang="${ru?"ru":"uz"}">${lad}</div>${prog}
+    <div class="ch-btns"><button type="button" class="btn primary" data-hphow="1">${me?(ru?"Как набрать баллы?":"Qanday ball yig‘aman?"):(ru?"Я тоже хочу →":"Men ham xohlayman →")}</button><button type="button" class="btn" data-hpx="1">${ru?"Закрыть":"Yopish"}</button></div>`); }
+document.addEventListener("click",e=>{ const h=e.target.closest("[data-hphow]"); if(h){ hpIntro(true); return; } const b=e.target.closest(".hp-b[data-hpk]"); if(!b||e.target.closest("#hp-ov")) return; e.preventDefault(); e.stopPropagation(); hpPop(b); },true);
+(function hpIntroTry(n){ return; /* «Unvonlar — saytni tarqatishga yordam bering» oynasi vaqtincha o'chirildi — fokus marafonda (2026-10-23, Otabek) */ setTimeout(()=>{ try{ if(/[?&](lt|ch|kg|du|dl)=/.test(location.search)||localStorage.getItem("hp:intro")) return; const ft=document.getElementById("fb-tip"); if(document.body.style.overflow==="hidden"||document.getElementById("app-ask")&&!document.getElementById("app-ask").hidden||ft&&!ft.hidden&&ft.offsetParent){ if(n<20) hpIntroTry(n+1); return; } hpIntro(); }catch(e){} },n?5000:3500); })(0);
 function hpAdd(kind,pts,note,id){ if(!ACC.cur||window.BLITZ||!(pts>0)) return false; const o=hpGet(); if(id){ o.seen=o.seen||[]; if(o.seen.includes(id)) return false; o.seen.push(id); o.seen=o.seen.slice(-200); }
   if(kind==="fb"||kind==="share"){ const k=actDay(); o.day=o.day||{}; const used=o.day[k]|0; if(used>=5) return false; pts=Math.min(pts,5-used); o.day[k]=used+pts; Object.keys(o.day).sort().slice(0,-7).forEach(x=>delete o.day[x]); }
-  const was=hpLv(o.p); o.p=(o.p|0)+pts; o.ev=(o.ev||[]); o.ev.push([Date.now(),kind,pts,String(note||"").slice(0,80)]); o.ev=o.ev.slice(-50); hpSave(o);
+  const was=hpLv(o.p); o.p=(o.p|0)+pts; o.c=o.c||{}; o.c[kind]=(o.c[kind]|0)+pts; o.ev=(o.ev||[]); o.ev.push([Date.now(),kind,pts,String(note||"").slice(0,80)]); o.ev=o.ev.slice(-50); hpSave(o);
   try{ actEv("hp",kind); }catch(e){} hpToast(kind,pts,note,hpLv(o.p)>was?hpLv(o.p):0); return true; }
 function hpToast(kind,pts,note,up){ const ru=state.lang==="ru", L=HP_LV[hpLv(hpPts())], nx=HP_LV[hpLv(hpPts())+1];
-  const head=kind==="th"?(ru?`🎓 ${note||"Учитель сказал спасибо!"}`:`🎓 ${note||"Ustoz senga rahmat dedi!"}`):kind==="fb"?(ru?"🏅 Спасибо — исправлю ошибку.":"🏅 Rahmat — xatoni tuzataman."):kind==="ref"?(ru?`👥 ${note}`:`👥 ${note}`):kind==="ch"?(ru?`⚡ ${note}`:`⚡ ${note}`):(ru?"🏅 Спасибо, что поделились!":"🏅 Ulashganingiz uchun rahmat!");
+  const head=kind==="th"?(ru?`🎓 ${note||"Учитель сказал спасибо!"}`:`🎓 ${note||"Ustoz senga rahmat dedi!"}`):kind==="fb"?(ru?"🏅 Спасибо — исправлю ошибку.":"🏅 Rahmat — xatoni tuzataman."):kind==="ref"||kind==="r100"?(ru?`👥 ${note}`:`👥 ${note}`):kind==="vis"?`🔗 ${note}`:kind==="vapp"?`📲 ${note}`:kind==="ch"?(ru?`⚡ ${note}`:`⚡ ${note}`):(ru?"🏅 Спасибо, что поделились!":"🏅 Ulashganingiz uchun rahmat!");
   const tail=up?(ru?`Новый уровень: ${L[1]} ${L[3]}!`:`Yangi daraja: ${L[1]} ${L[2]}!`):nx?(ru?`${hpPts()} / ${nx[0]} → ${nx[1]} ${nx[3]}`:`${hpPts()} / ${nx[0]} → ${nx[1]} ${nx[2]}`):"";
   let t=document.getElementById("hp-toast"); if(!t){ t=document.createElement("div"); t.id="hp-toast"; t.className="hp-toast"; document.body.appendChild(t); }
   t.innerHTML=`<b>+${pts} ${ru?"балл":"ball"}</b> ${esc(head)}${tail?`<small>${esc(tail)}</small>`:""}`; t.classList.remove("show"); void t.offsetWidth; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),up?6000:4200); }
 /* do'st linki */
-let HP_REF=null; async function hpRefCode(){ if(!ACC.cur) return ""; if(HP_REF) return HP_REF; HP_REF=(await cloudSha("streber.uz/ref/v1:"+ACC.cur)).slice(0,8); return HP_REF; }
+let HP_REF=null, HP_REF8=null; const REF_AB="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+/* do'st kodi: 6 belgi (A–Z, 2–9) — rasmda/og'zaki aytishga qulay; eski 8-hex linklar ham ishlaydi (2026-10-23) */
+async function hpRefCode(){ if(!ACC.cur) return ""; if(HP_REF) return HP_REF; const h=await cloudSha("streber.uz/ref/v1:"+ACC.cur); HP_REF8=h.slice(0,8); let v=parseInt(h.slice(8,16),16), c=""; for(let i=0;i<6;i++){ c+=REF_AB[v&31]; v=Math.floor(v/32); } HP_REF=c; return HP_REF; }
+function hpRefOk(r){ r=String(r||"").trim(); return /^[A-Za-z0-9]{6}$/.test(r)?r.toUpperCase():/^[a-f0-9]{8}$/.test(r)?r:""; }
+function hpDevId(){ let d=""; try{ d=localStorage.getItem("devid")||""; if(!d){ d=Array.from(crypto.getRandomValues(new Uint8Array(8))).map(x=>x.toString(16).padStart(2,"0")).join(""); localStorage.setItem("devid",d); } }catch(e){ d="0000000000000000"; } return d; }
 function hpRefLink(code){ return CH_SITE+"?ref="+code; }
-(function(){ try{ const q=new URLSearchParams(location.search), r=q.get("ref"); if(r&&/^[a-f0-9]{8}$/.test(r)){ if(!ACC.cur&&!localStorage.getItem("ref:by")) localStorage.setItem("ref:by",r); q.delete("ref"); history.replaceState(null,"",location.pathname+(q.toString()?"?"+q:"")+location.hash); } }catch(e){} })();
+(function(){ try{ const q=new URLSearchParams(location.search), r=hpRefOk(q.get("ref")); if(r){ if(!ACC.cur&&!localStorage.getItem("ref:by")) localStorage.setItem("ref:by",r); try{ localStorage.setItem("ref:vis:"+r,localStorage.getItem("ref:vis:"+r)||"0"); }catch(e){} q.delete("ref"); history.replaceState(null,"",location.pathname+(q.toString()?"?"+q:"")+location.hash); } }catch(e){} })();
+/* link/QR ochildi: yangi qurilma → chaqirgan odamga +1 (ref/<kod>_<qurilma> k:"v"); ilova o'rnatilsa → k:"a" (+4). O'z kodi — 0. */
+async function hpRefVisit(kind){ try{ if(!CLOUD_ON||window.BLITZ) return; const codes=Object.keys(localStorage).filter(k=>k.startsWith("ref:vis:")).map(k=>k.slice(8)); if(!codes.length) return; const me=ACC.cur?await hpRefCode():"", me8=HP_REF8||"";
+  for(const by of codes){ if(by===me||by===me8) continue; const st=localStorage.getItem("ref:vis:"+by)||"0"; const want=kind==="a"?"a":"v"; if(st==="a"||(st==="v"&&want==="v")) continue;
+    await fsPut("ref/"+by+"_"+hpDevId(),{by:fsS(by),nm:fsS(""),w:fsI(0),t:fsI(Date.now()),k:fsS(want)}); localStorage.setItem("ref:vis:"+by,want); } }catch(e){} }
+setTimeout(()=>{ try{ hpRefVisit("v"); }catch(e){} },1500); /* 7 s edi — tez yopib ketganlar hisoblanmasdi (2026-10-23) */
 /* yangi o'quvchi: kim chaqirganini bazaga yozadi (nomi va so'zlar soni — chaqirgan odam 100 so'zdan keyin bonus oladi) */
 async function hpRefPush(){ try{ if(!CLOUD_ON||!ACC.cur) return; const by=localStorage.getItem("ref:by"); if(!by) return; const me=await hpRefCode(); if(by===me){ localStorage.removeItem("ref:by"); return; }
-  const w=progCount().n|0, key="ref:pushed:"+by, last=+(localStorage.getItem(key)||-1); if(last>=0&&(w<100||last>=100)) return;
-  await fsPut("ref/"+by+"_"+(await cloudNameId(ACC.cur)).slice(0,16),{by:fsS(by),nm:fsS(rkName()),w:fsI(w),t:fsI(Date.now())}); localStorage.setItem(key,String(w)); }catch(e){} }
+  const w=progCount().n|0, gr=mrGrDone(), q=(w>=100||gr>=MR.GR)?1:0, key="ref:pushed:"+by, last=+(localStorage.getItem(key)||-1), lq=localStorage.getItem(key+":q")==="1", lt=+(localStorage.getItem(key+":t")||0), lg=+(localStorage.getItem(key+":g")||0);
+  /* taklif qilgan odam do'stining progressini ko'rsin: har +5 so'z / yangi grammatika — ko'pi bilan 10 daqiqada bir marta (2026-10-23) */
+  if(last>=0&&lq) return; if(last>=0&&!q&&!((w-last>=5||gr>lg)&&Date.now()-lt>600000)) return;
+  await fsPut("ref/"+by+"_"+(await cloudNameId(ACC.cur)).slice(0,16),{by:fsS(by),nm:fsS(rkName()),w:fsI(w),gr:fsI(Math.min(gr,500)),t:fsI(Date.now()),k:fsS("r")}); localStorage.setItem(key,String(w)); localStorage.setItem(key+":t",String(Date.now())); localStorage.setItem(key+":g",String(gr)); if(q) localStorage.setItem(key+":q","1"); }catch(e){} }
 /* chaqirgan odam: ref hujjatlarini sanaydi → ballar */
-async function hpRefSync(){ try{ if(!CLOUD_ON||!ACC.cur||window.BLITZ) return; const code=await hpRefCode();
-  const r=await fetch(FS_BASE.replace(/\/documents\/$/,"/documents:runQuery"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({structuredQuery:{from:[{collectionId:"ref"}],where:{fieldFilter:{field:{fieldPath:"by"},op:"EQUAL",value:{stringValue:code}}},limit:300}})}); if(!r.ok) return;
-  const J=await r.json(), o=hpGet(); o.refs=o.refs||{}; let ch=false; const ru=state.lang==="ru";
-  J.forEach(x=>{ const d=x.document; if(!d) return; const id=d.name.split("/").pop(), F=d.fields||{}, nm=(F.nm||{}).stringValue||"?", w=+((F.w||{}).integerValue||0), st=o.refs[id]||0;
-    if(st<1){ o.refs[id]=1; hpSave(o); ch=true; hpAdd("ref",3,ru?`${nm} зарегистрировался по вашей ссылке`:`${nm} sizning linkingiz bilan ro‘yxatdan o‘tdi`,"ref1:"+id); }
-    if(w>=100&&(o.refs[id]|0)<2){ const o2=hpGet(); o2.refs[id]=2; hpSave(o2); ch=true; hpAdd("ref",5,ru?`${nm} выучил 100 слов — бонус!`:`${nm} 100 ta so‘z o‘rgandi — bonus!`,"ref2:"+id); } });
-  const o3=hpGet(); o3.refN=J.filter(x=>x.document).length; hpSave(o3); }catch(e){} }
+async function hpRefQuery(code){ const r=await fetch(FS_BASE.replace(/\/documents\/$/,"/documents:runQuery"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({structuredQuery:{from:[{collectionId:"ref"}],where:{fieldFilter:{field:{fieldPath:"by"},op:"EQUAL",value:{stringValue:code}}},limit:300}})}); if(!r.ok) return []; return (await r.json()).filter(x=>x.document).map(x=>x.document); }
+async function hpRefSync(){ try{ if(!CLOUD_ON||!ACC.cur||window.BLITZ) return; const code=await hpRefCode(); let docs=await hpRefQuery(code); if(HP_REF8) docs=docs.concat(await hpRefQuery(HP_REF8));
+  const ru=state.lang==="ru"; let n=0; const RS=()=>(hpGet().refs||{}), RSet=(id,v)=>{ const o=hpGet(); o.refs=o.refs||{}; o.refs[id]=v; hpSave(o); }; /* har safar yangidan o'qiladi — hpAdd yozganini eski obyekt bosib ketmasin (2026-10-23) */
+  /* ballar: ro'yxat +2 · 100 so'z +6 · link/QR ochildi +1 · o'sha odam ilova o'rnatdi +4 (2026-10-23, marafon qoidalari) */
+  const FL=[]; let VN=0; docs.forEach(d=>{ const F=d.fields||{}, nm=(F.nm||{}).stringValue||"", k=(F.k||{}).stringValue||(nm?"r":"v"); if(k==="r"&&nm) FL.push([nm,+((F.w||{}).integerValue||0),+((F.gr||{}).integerValue||0),+((F.t||{}).integerValue||0)]); else VN++; });
+  try{ localStorage.setItem(accK("mr:fl"),JSON.stringify({l:FL,v:VN,t:Date.now()})); }catch(e){}
+  docs.forEach(d=>{ const id=d.name.split("/").pop(), F=d.fields||{}, nm=(F.nm||{}).stringValue||"", w=+((F.w||{}).integerValue||0), gr=+((F.gr||{}).integerValue||0), k=(F.k||{}).stringValue||(nm?"r":"v");
+    if(k==="v"||k==="a"){ if((RS()[id]|0)<1){ RSet(id,1); hpAdd("vis",1,ru?"Кто-то открыл вашу ссылку":"Kimdir linkingizni ochdi","vis:"+id); } if(false&&k==="a"&&(RS()[id]|0)<2){ RSet(id,2); hpAdd("vapp",4,ru?"По вашей ссылке установили приложение!":"Linkingiz orqali ilova o‘rnatildi!","vapp:"+id); } return; }
+    n++; if((RS()[id]|0)<1){ RSet(id,1); hpAdd("ref",1,ru?`${nm} зарегистрировался по вашей ссылке`:`${nm} sizning linkingiz bilan ro‘yxatdan o‘tdi`,"ref1:"+id); }
+    if((w>=100||gr>=MR.GR)&&(RS()[id]|0)<2){ RSet(id,2); hpAdd("r100",6,ru?`${nm} ${w>=100?"выучил 100 слов":"сделал грамматику"} — бонус!`:`${nm} ${w>=100?"100 ta so‘z o‘rgandi":"grammatika mashqlarini bajardi"} — bonus!`,"ref2:"+id); } });
+  const o3=hpGet(); o3.refN=n; hpSave(o3); try{ mrHomeDraw(); }catch(e){} }catch(e){} }
+
+/* ===== 📣 Tarqatish marafoni — 23.10 → 15.11.2026 (2026-10-23, Otabek) =====
+   Ballar: do'st ro'yxat +2 · do'st 100 so'z +6 · link/QR ochildi +1 (jami ≤20) · o'sha odam ilova o'rnatdi +4 · o'zi ilova +2 · Challenge'da yangi odam +2 · 👎 (ustoz tasdiqlasa) +1 (jami ≤10). Ustoz rahmati hisoblanmaydi.
+   Eng kami: 🥇 40 · 🥈 30 · 🥉 25. Sovrin 1 000 000 / 600 000 / 400 000. Tekshiruv 16–18.11, e'lon 18.11. Har kim o'z marafon ballini s/ hujjatiga `mr` qilib yozadi. */
+const MR={T0:Date.UTC(2026,9,22,19,0,0),T1:Date.UTC(2026,10,15,18,59,59),ANN:Date.UTC(2026,10,15,19,0,0),MIN:[60,45,35],MIN10:20,NEED:4,CAP:[1000000,600000,400000],CAP10:100000,PER:100000,GR:5,PRIZE:["1 mln","600 ming","400 ming"],PRIZE_RU:["1 млн","600 тыс.","400 тыс."],cfg:null,top:null};
+function mrOn(){ return !window.BLITZ&&!IN_ARTIFACT; }
+function mrActive(){ const t=Date.now(); return t>=MR.T0&&t<=MR.T1; }
+function mrDays(){ return Math.max(0,Math.ceil((MR.T1-Date.now())/864e5)); }
+function mrCalc(){ if(!ACC.cur) return null; const ev=(hpGet().ev||[]).filter(x=>x[0]>=MR.T0&&x[0]<=MR.T1); const o={p:0,ref:0,r100:0,app:0,sh:0,ch:0,fb:0,t:0}; let sh=0, fb=0;
+  let chP=0; ev.forEach(x=>{ const k=x[1], p=x[2]|0; let add=0; if(k==="ref"){ o.ref++; add=1; } else if(k==="r100"){ o.r100++; add=6; } else if(k==="app"){ if(!o.app){ o.app=1; add=10; } } else if(k==="vis"){ const a=Math.min(1,Math.max(0,20-sh)); sh+=a; o.sh++; add=a; } else if(k==="ch"){ const a=Math.min(p,Math.max(0,20-chP)); chP+=a; o.ch++; add=a; } else if(k==="fb"){ o.fb++; add=p; } if(add){ o.p+=add; o.t=x[0]; } }); /* vapp (do'st ilovasi) — 0 ball (qoidalar v2) */
+  return o; }
+function mrRows(){ const me=rkId(), X=new Set((MR.cfg&&MR.cfg.x)||[]); const rows=Object.entries(RK.list).filter(([id,x])=>x.mr&&x.mr.p>0&&!X.has(id)).map(([id,x])=>[id,x]);
+  if(me&&ACC.cur&&!X.has(me)){ const m=mrCalc(); if(m&&m.p>0){ const i=rows.findIndex(r=>r[0]===me); if(i>=0) rows[i][1]=Object.assign({},rows[i][1],{mr:m}); else rows.push([me,{nm:rkName(),mr:m,hp:hpPts(),hb:hpCnt()}]); } }
+  return rows.sort((a,b)=>(b[1].mr.p-a[1].mr.p)||((a[1].mr.t||0)-(b[1].mr.t||0))); }
+function mrMyPos(){ const me=rkId(); if(!me) return 0; const i=mrRows().findIndex(r=>r[0]===me); return i<0?0:i+1; }
+/* qoidalar v2 (2026-10-23 02:05, Otabek): link ochildi +1 (≤20) · ro'yxat +1 · 100 so'z YOKI 5 ta grammatika mashqi ≥80% +6 · o'zi ilova +10 · do'st ilovasi 0 · challenge +2 (≤20) · 👎 +1 (cheklovsiz)
+   sovrin «gacha»: har bir haqiqiy do'st (100 so'z/grammatika) uchun 100 ming, 🥇≤1 mln 🥈≤600 ming 🥉≤400 ming, 4–10: 100 ming; eng kami 60/45/35, 4–10: 20 */
+function mrMin(i){ return i<3?MR.MIN[i]:MR.MIN10; }
+function mrPrize(i,m){ if(i>=10||!m) return 0; return i<3?MR.CAP[i]:MR.CAP10; }
+/* sovrin: o'rin ball bo'yicha, lekin faqat ≥4 haqiqiy do'sti borlar oladi; shart bajarmagan o'tkazib yuboriladi (2026-10-23 02:17, Otabek) */
+function mrOk(m){ return !!m&&(m.r100|0)>=MR.NEED; }
+function mrAlloc(rows){ const A={}; let k=0; rows.forEach(([id,x])=>{ const m=x.mr||x; if(k<10&&mrOk(m)){ A[id]=mrPrize(k,m); k++; } }); return A; } /* qat'iy sovrin (2026-10-23 02:13, Otabek: «gacha» emas) */
+function mrSum(n,ru){ if(!n) return "0"; if(n>=1000000) return (n/1000000).toString().replace(".",",")+(ru?" млн":" mln"); return Math.round(n/1000)+(ru?" тыс.":" ming"); }
+function mrMedal(i){ return ["🥇","🥈","🥉"][i]||(i+1)+"."; }
+/* grammatika: onlayn mashqlardagi «gram» bo'limlaridagi topshiriqlar (Aufgabe), kamida 80% to'g'ri */
+function mrGrDone(){ let n=0; try{ const D=exData(); for(const id in D){ const S=D[id].sec||[]; let R=null; S.forEach((sec,si)=>{ if(sec.k!=="gram") return; if(!R) R=exLoad(id); const r=R[si]; if(!r) return; const G=[]; let info=null; (sec.items||[]).forEach((it,i)=>{ if(it.t==="info"){ info=it.h; return; } const L=G[G.length-1]; if(L&&L.h===it.h&&L.info===info) L.ks.push(i); else G.push({h:it.h,info,ks:[i]}); }); G.forEach(g=>{ const ok=g.ks.filter(i=>r[i]===1).length; if(g.ks.length&&ok/g.ks.length>=0.8) n++; }); }); } }catch(e){} return n; }
+function mrFl(){ try{ return JSON.parse(localStorage.getItem(accK("mr:fl"))||"null")||{l:[],v:0}; }catch(e){ return {l:[],v:0}; } }
+function mrFriends(){ const ru=state.lang==="ru", F=mrFl(), L=(F.l||[]).slice().sort((a,b)=>((b[1]>=100||b[2]>=MR.GR)-(a[1]>=100||a[2]>=MR.GR))||b[1]-a[1]), ok=L.filter(x=>x[1]>=100||x[2]>=MR.GR).length;
+  const row=x=>{ const real=x[1]>=100||x[2]>=MR.GR, pw=Math.min(100,x[1]), pg=Math.min(MR.GR,x[2]); return `<li class="${real?"ok":""}"><div class="mr-fh"><b>${esc(x[0])}</b><span>${real?(ru?"✅ живой человек":"✅ jonli odam"):(ru?`ещё ${100-pw} слов или ${MR.GR-pg} грамм.`:`yana ${100-pw} so‘z yoki ${MR.GR-pg} ta gram.`)}</span></div><div class="mr-fb"><span>🧠 ${x[1]}/100</span><i><b style="width:${pw}%"></b></i><span>📘 ${x[2]}/${MR.GR}</span></div></li>`; };
+  hpSheet(`<h4>👥 ${ru?"Пришли через меня":"Men orqali kelganlar"} — ${ok}/${MR.NEED}</h4><p class="mu">${ok>=MR.NEED?(ru?"Условие приза выполнено! Теперь — больше баллов, чтобы быть выше.":"Sovrin sharti bajarildi! Endi — ko‘proq ball, yuqoriroq o‘rin uchun."):(ru?`До приза нужно ещё ${MR.NEED-ok} живых человека. Друг становится «живым», когда выучит 100 слов или сделает ${MR.GR} заданий по грамматике (≥80%).`:`Sovringa yana ${MR.NEED-ok} ta jonli odam kerak. Odam 100 so‘zni yodlaganda yoki ${MR.GR} ta grammatika mashqini (≥80%) qilganda «jonli» bo‘ladi.`)}</p>
+  ${L.length?`<ul class="mr-fl">${L.map(row).join("")}</ul>`:`<p class="mu">${ru?"Пока никто не зарегистрировался по вашей ссылке.":"Hali hech kim linkingiz bilan ro‘yxatdan o‘tmadi."}</p>`}
+  ${F.v?`<p class="mu">🔗 ${ru?"Открыли ссылку, но ещё не зарегистрировались":"Linkni ochgan, lekin hali ro‘yxatdan o‘tmagan"}: <b>${F.v}</b></p>`:""}
+  <p class="mu" style="font-size:12.5px">${ru?"Данные друзей обновляются, когда они заходят на сайт.":"Do‘stlar ma’lumoti ular saytga kirganda yangilanadi."}</p>
+  <div class="ch-btns"><button type="button" class="btn primary" data-hpref="share">📤 ${ru?"Пригласить ещё":"Yana taklif qilish"}</button><button type="button" class="btn" data-hpx="1">${ru?"Закрыть":"Yopish"}</button></div>`); hpCardBind(document.getElementById("hp-ov")); }
+function mrBreak(m,uz){ const a=[]; a.push(`👥 ${Math.min(m.r100|0,99)}/${MR.NEED}${(m.r100|0)>=MR.NEED?" ✅":""}`); if(m.ref) a.push(`${uz?"keldi":"пришли"} ${m.ref}`); if(m.app) a.push("📲 "+m.app); if(m.sh) a.push("🔗 "+m.sh); if(m.ch) a.push("⚡ "+m.ch); if(m.fb) a.push("👎 "+m.fb); return a.join(" · "); }
+function mrFmt(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g," "); }
+async function mrCfgLoad(){ if(!CLOUD_ON||!mrOn()) return; try{ let c=null; try{ c=JSON.parse(localStorage.getItem("mr:cfg")||"null"); }catch(e){} if(c&&Date.now()-(c._t||0)<600000){ MR.cfg=c; return; } const f=await fsGet("mr/cfg"); const o={x:[],w:[],_t:Date.now()}; if(f){ try{ o.x=JSON.parse((f.x||{}).stringValue||"[]"); }catch(e){} try{ o.w=JSON.parse((f.w||{}).stringValue||"[]"); }catch(e){} } MR.cfg=o; try{ localStorage.setItem("mr:cfg",JSON.stringify(o)); }catch(e){} }catch(e){} }
+async function mrTopLoad(){ if(!CLOUD_ON||!mrOn()) return; try{ let c=null; try{ c=JSON.parse(localStorage.getItem("mr:top")||"null"); }catch(e){} if(c&&Date.now()-(c._t||0)<1800000){ MR.top=c; return; } const f=await fsGet("mr/top"); const o={l:[],_t:Date.now()}; if(f){ try{ o.l=JSON.parse((f.l||{}).stringValue||"[]"); }catch(e){} } MR.top=o; try{ localStorage.setItem("mr:top",JSON.stringify(o)); }catch(e){} }catch(e){} }
+/* reytingni ochgan har bir kishi top-3 ni mr/top ga yozadi (bosh sahifa kartasi uchun — hamma s/ hujjatlarini o'qimaslik uchun) */
+async function mrTopPush(){ if(!CLOUD_ON||!mrOn()||!RK.fs) return; const rows=mrRows().slice(0,3).map(([id,x])=>[String(x.nm).slice(0,30),x.mr.p,id]); const l=JSON.stringify(rows); const last=localStorage.getItem("mr:topp")||""; if(last===l) return; try{ await fsPut("mr/top",{l:fsS(l),t:fsI(Date.now())}); localStorage.setItem("mr:topp",l); MR.top={l:rows,_t:Date.now()}; localStorage.setItem("mr:top",JSON.stringify(MR.top)); mrHomeDraw(); }catch(e){} }
+function mrRulesHTML(ru){ const row=(t,b,c)=>`<div><span>${t}</span><em>${b}</em>${c?`<small>${c}</small>`:""}</div>`;
+  return `<h4>📣 ${ru?"Марафон распространения":"Tarqatish marafoni"}</h4>
+  <p class="mu">23.10.2026 00:00 – 15.11.2026 23:59 (${ru?"Ташкент":"Toshkent"}). ${ru?"Считаются только баллы, набранные в этот период. Участвуют все зарегистрированные — автоматически.":"Faqat shu oraliqda yig‘ilgan ballar hisoblanadi. Ro‘yxatdan o‘tgan hamma avtomatik qatnashadi."}</p>
+  <p><b>${ru?"Как набрать баллы":"Ballar"}</b></p>
+  <div class="hp-how2 mr-how">
+  ${row(ru?"🔗 Кто-то открыл вашу ссылку / QR / код":"🔗 Kimdir linkingiz / QR / kodingizni ochdi","+1",ru?"всего ≤ 20":"jami ≤ 20")}
+  ${row(ru?"👥 Пришедший через вас зарегистрировался":"👥 Siz orqali kelgan odam ro‘yxatdan o‘tdi","+1")}
+  ${row(ru?"🎓 Человек, пришедший через вас, выучил 100 слов или сделал 5 заданий по грамматике (≥80%)":"🎓 Siz orqali qo‘shilgan odam 100 so‘z o‘rgandi yoki 5 ta grammatika mashqini (≥80%) bajardi","+6")}
+  ${row(ru?"📲 Вы сами установили приложение":"📲 O‘zingiz ilovani o‘rnatdingiz","+10",ru?"1 раз":"1 marta")}
+  ${row(ru?"⚡ Новый игрок в вашем Challenge":"⚡ Challenge’ingizda yangi odam o‘ynadi","+2",ru?"всего ≤ 20":"jami ≤ 20")}
+  ${row(ru?"👎 Ошибка на сайте (подтвердил учитель)":"👎 Saytdagi xato (ustoz tasdiqlasa)","+1",ru?"без лимита":"cheklovsiz")}</div>
+  <p class="mu">${ru?"Один человек/устройство — один раз · своя ссылка = 0 · установка приложения другом — 0 · «спасибо» учителя не считается.":"Bir odam/qurilma bir marta · o‘z linkingiz = 0 · do‘stning ilova o‘rnatishi = 0 · ustoz rahmati hisoblanmaydi."}</p>
+  <p><b>🎓 ${ru?"Живой человек":"Jonli odam"}</b> — ${ru?"пришёл по вашей ссылке, зарегистрировался и выучил 100 слов (или 5 заданий по грамматике ≥80%).":"linkingiz bilan kelib, ro‘yxatdan o‘tgan va 100 so‘zni yodlagan yoki 5 ta grammatika mashqini (≥80%) qilgan odam."}</p>
+  <p><b>🏆 ${ru?"Призы (Click/Payme)":"Sovrinlar (Click/Payme)"}</b></p>
+  <table class="mr-tb"><tr><th>${ru?"Место":"O‘rin"}</th><th>${ru?"Приз":"Sovrin"}</th></tr>
+  <tr><td>🥇 1</td><td>${ru?"1 млн сум":"1 mln so‘m"}</td></tr><tr><td>🥈 2</td><td>${ru?"600 тыс. сум":"600 ming so‘m"}</td></tr><tr><td>🥉 3</td><td>${ru?"400 тыс. сум":"400 ming so‘m"}</td></tr><tr><td>4–10</td><td>${ru?"по 100 тыс. сум":"100 ming so‘mdan"}</td></tr></table>
+  <p><b>✅ ${ru?"Кто получает приз":"Sovrinni kim oladi"}:</b> ${ru?"тот, кто <b>набрал больше всех баллов</b> и привёл <b>минимум 4 живых человека</b>. Если у участника меньше 4 живых людей, приз переходит к следующему по баллам, кто выполнил условие.":"<b>eng ko‘p ball yig‘gan</b> va <b>kamida 4 ta jonli odam</b> olib kelgan ishtirokchi. Kimda 4 tadan kam jonli odam bo‘lsa, sovrin ball bo‘yicha keyingi, shartni bajargan odamga o‘tadi."}</p>
+  <p class="mu">${ru?"При равенстве — кто набрал раньше. Победители получают постоянный значок «🏆 Победитель марафона · ноябрь 2026».":"Teng bo‘lsa — oldinroq yetgan yuqorida. G‘oliblarga doimiy «🏆 Marafon g‘olibi · noyabr 2026» belgisi."}</p>
+  <p class="mu">${ru?"Проверка 16–18.11: фейковые аккаунты, несколько аккаунтов с одного устройства, читеры в играх — исключаются. Объявление 18.11, выплата Click/Payme в течение 7 дней. Окончательное решение — за владельцем сайта.":"Tekshiruv 16–18.11: soxta akkaunt, bir qurilmadan bir nechta akkaunt, o‘yinlarda cheater — chetlatiladi. E’lon 18.11, to‘lov Click/Payme orqali 7 kun ichida. Yakuniy qaror — sayt egasiniki."}</p>
+  <div class="ch-btns">${ACC.cur?`<button type="button" class="btn primary" data-hpref="share">📤 ${ru?"Моя ссылка — отправить другу":"Mening linkim — do‘stga yuborish"}</button>`:`<button type="button" class="btn primary" data-mr="reg">${ru?"Участвовать → регистрация":"Qatnashish → ro‘yxatdan o‘tish"}</button>`}<button type="button" class="btn" data-hpx="1">${ru?"Понятно":"Tushunarli"}</button></div>`; }
+function mrRules(){ hpSheet(mrRulesHTML(state.lang==="ru")); hpCardBind(document.getElementById("hp-ov")); }
+function mrWinners(){ return (MR.cfg&&MR.cfg.w)||[]; }
+function mrHomeDraw(){ const el=document.getElementById("mr-home"); if(!el) return; const ru=state.lang==="ru"; if(!mrOn()||(Date.now()<MR.T0)){ el.hidden=true; return; }
+  const W=mrWinners(); if(!mrActive()&&!W.length&&Date.now()>MR.T1+30*864e5){ el.hidden=true; return; }
+  let col=false; try{ col=!!localStorage.getItem("mr:col"); }catch(e){}
+  if(W.length){ const me=rkId(), mine=W.find(w=>w[2]===me); el.hidden=false; el.innerHTML=`<div class="mr-card win"><div class="mr-h"><b>🏆 ${ru?"Победители марафона":"Marafon g‘oliblari"}</b></div><div class="mr-wl">${W.map((w,i)=>`<div>${mrMedal(i)} <b>${esc(w[0])}</b> · ${w[1]} ${ru?"баллов":"ball"} · ${w[3]?mrSum(w[3],ru):(ru?MR.PRIZE_RU:MR.PRIZE)[i]||""} ${ru?"сум":"so‘m"}</div>`).join("")}</div>${mine?`<button type="button" class="btn" data-mr="claim">🎁 ${ru?"Получить приз":"Mukofotni olish"}</button>`:""}<button type="button" class="lrn-link" data-mr="rules">${ru?"Правила":"Qoidalar"}</button></div>`; return; }
+  if(!mrActive()){ el.hidden=false; el.innerHTML=`<div class="mr-card one">📣 ${ru?"Марафон завершён — проверка результатов, объявление 18.11":"Marafon tugadi — natijalar tekshirilmoqda, e’lon 18.11"} <button type="button" class="lrn-link" data-mr="rules">${ru?"Правила":"Qoidalar"}</button></div>`; return; }
+  const d=mrDays(), R0=RK.fs?mrRows():[], top=R0.length?R0.slice(0,3).map(([id,x])=>[x.nm,x.mr.p,id]):((MR.top&&MR.top.l)||[]), m=ACC.cur?mrCalc():null, pos=ACC.cur&&RK.fs?mrMyPos():0, p=m?m.p:0; /* o'rin faqat reyting yuklanganda (2026-10-23) */
+  const t1=top[0]; let need="", tgt=0, tn=0; if(ACC.cur){ const rows=mrRows(); if(pos!==3&&rows.length>=3&&pos!==1&&pos!==2){ tgt=rows[2][1].mr.p+1; tn=3; } else if(pos>1){ tgt=rows[pos-2][1].mr.p+1; tn=pos-1; } else if(pos===1||(RK.fs&&!rows.length)){ tgt=MR.MIN[0]; tn=0; } else if(!RK.fs){ tgt=MR.MIN10; tn=0; } const rr=m?(m.r100|0):0; if(m&&rr<MR.NEED){ const k=MR.NEED-rr; need=ru?`до приза ещё ${k} ${k===1?"живой человек":"живых человека"}`:`sovringa yana ${k} ta jonli odam kerak`; } else if(tgt>p){ const k=tgt-p; need=tn?(ru?`до ${tn}-го места не хватает ${k} ≈ ${Math.ceil(k/8)} ${Math.ceil(k/8)===1?"друг":Math.ceil(k/8)<5?"друга":"друзей"}`:`${tn}-o‘ringa sizga ${k} ball kam ≈ ${Math.ceil(k/8)} do‘st`):(ru?`до минимума ${tgt===MR.MIN10?"(4–10)":"🥇"} не хватает ${k}`:`${tgt===MR.MIN10?"(4–10)":"🥇"} eng kamigacha ${k} ball`); } else if(pos===1) need=ru?"вы лидер — удержите!":"siz yetakchisiz — ushlab turing!"; }
+  el.hidden=false;
+  if(col){ el.innerHTML=`<button type="button" class="mr-card one" data-mr="open">📣 ${ru?"Марафон":"Marafon"} · ${d} ${ru?"дн.":"kun"}${ACC.cur?` · ${ru?"у вас":"siz"} ${p} ${ru?"б.":"ball"}${pos?` · ${pos}-${ru?"е":"o‘rin"}`:""}`:""}${t1?` · 🥇 ${esc(t1[0])} ${t1[1]}`:""} ▸</button>`; return; }
+  el.innerHTML=`<div class="mr-card"><button type="button" class="mr-x" data-mr="close" aria-label="✕">✕</button><div class="mr-h"><b>📣 ${ru?"Марафон распространения":"Tarqatish marafoni"}</b></div>
+    <small>${ru?"До 15 ноября, 10 призов:":"15-noyabrgacha, 10 ta sovrin:"} <b>${ru?"1 млн · 600 тыс. · 400 тыс. · 4–10: по 100 тыс. сум":"1 mln · 600 ming · 400 ming · 4–10: 100 ming so‘mdan"}</b></small>
+    <div class="mr-st"><div><b>${d}</b><small>${ru?"дней осталось":"kun qoldi"}</small></div><div><b>${t1?t1[1]:"—"}</b><small>${t1?`🥇 ${esc(t1[0])}`:(ru?"пока нет лидера":"hali yetakchi yo‘q")}</small></div><div><b>${ACC.cur?p:"—"}</b><small>${ACC.cur?(pos?`${ru?"вы":"siz"} · ${pos}-${ru?"е место":"o‘rin"}`:(ru?"вы":"siz")):(ru?"вы":"siz")}</small></div></div>
+    ${ACC.cur?`<button type="button" class="mr-frb" data-mr="friends"><span>👥 ${ru?"Живые люди":"Jonli odamlaringiz"}: <b>${Math.min(m?m.r100|0:0,99)} / ${MR.NEED}</b></span><i><b style="width:${Math.min(100,Math.round((m?m.r100|0:0)/MR.NEED*100))}%"></b></i><span class="mr-frm">${ru?"кто пришёл и сколько выучил ›":"kim keldi, qancha o‘rgandi ›"}</span></button>`:""}
+    <small>${ru?"Приз получают те, кто набрал больше всех баллов и привёл минимум":"Sovrin — eng ko‘p ball yig‘gan va kamida"} ${MR.NEED} ${ru?"живых человека (выучил 100 слов или сделал 5 заданий по грамматике)":"ta jonli odam (100 so‘zni yodlagan yoki 5 ta grammatika mashqini qilgan) olib kelganlarga"}${need?` · <b>${need}</b>`:""}</small>
+    <div class="mr-bt">${ACC.cur?`<button type="button" class="btn" data-hpref="share">📤 ${ru?"Моя ссылка":"Linkimni yuborish"}${HP_REF?` · kod ${HP_REF}`:""}</button>`:`<button type="button" class="btn" data-mr="reg">${ru?"Участвовать → регистрация":"Qatnashish → ro‘yxatdan o‘ting"}</button>`}<button type="button" class="btn o" data-mr="rules">${ru?"Правила":"Qoidalar"}</button></div></div>`;
+  if(ACC.cur) hpCardBind(el); }
+function mrRankDraw(l,hd,uz,me){ const ru=!uz, d=mrDays(), W=mrWinners();
+  if(hd) hd.innerHTML=`<h2>📣 ${uz?"Tarqatish marafoni":"Марафон распространения"}</h2><p>23.10 – 15.11 · ${uz?"10 ta sovrin: 1 mln / 600 ming / 400 ming · 4–10: 100 ming":"10 призов: 1 млн / 600 тыс. / 400 тыс. · 4–10: 100 тыс."} · ${uz?"shart: kamida 4 ta jonli odam":"условие: минимум 4 живых человека"} · ${mrActive()?`${d} ${uz?"kun qoldi":"дн. осталось"}`:(uz?"tugadi":"завершён")} · <button type="button" class="lrn-link" data-mr="rules">${uz?"Qoidalar":"Правила"}</button></p>`;
+  const rows=mrRows(), m=document.getElementById("rk-me"), pos=mrMyPos(), mine=ACC.cur?mrCalc():null;
+  if(m) m.innerHTML=!ACC.cur?`<div class="rk-me">${uz?"Qatnashish uchun ro‘yxatdan o‘ting (👤 ism + parol).":"Чтобы участвовать, зарегистрируйтесь (👤 имя + пароль)."}</div>`:`<div class="rk-me">${pos?(uz?`Siz <b>${pos}-o‘rindasiz</b> · ${mine.p} ball`:`Вы на <b>${pos}-м месте</b> · ${mine.p} б.`):(uz?`Sizda hali ball yo‘q — linkingizni do‘stga yuboring.`:`У вас пока нет баллов — отправьте ссылку другу.`)}${pos>3&&rows[2]?` · ${uz?`3-o‘ringa ${rows[2][1].mr.p+1-mine.p} ball kam`:`до 3-го места ${rows[2][1].mr.p+1-mine.p} б.`}`:""}${mine?` · ${uz?"jonli odam":"живых людей"}: ${mine.r100|0}`:""}${mine&&(mine.r100|0)<MR.NEED?` · <b>${uz?`sovringa yana ${MR.NEED-(mine.r100|0)} ta jonli odam`:`до приза ещё ${MR.NEED-(mine.r100|0)} живых человека`}</b>`:""}. <button type="button" class="lrn-link" data-mr="friends">👥 ${uz?"Men orqali kelganlar":"Пришли через меня"}</button></div>`;
+  let st=""; if(W.length) st=`<li class="rk-win">🏆 ${uz?"G‘oliblar":"Победители"}: ${W.map((w,i)=>`${mrMedal(i)} ${esc(w[0])} ${w[1]}`).join(" · ")}</li>`;
+  else if(rows.length){ const ok=rows.filter(r=>mrOk(r[1].mr)).length; st=`<li class="rk-win mr-min${ok?" ok":""}">${ok?(uz?`✅ Sovringa da’vogarlar (≥4 jonli odam): <b>${ok}</b> kishi · 10 ta sovrin`:`✅ Претендентов на приз (≥4 живых человека): <b>${ok}</b> · 10 призов`):(uz?"⚠️ Hozircha hech kim 4 ta jonli odam shartini bajarmadi — sovrinlar ochiq!":"⚠️ Пока никто не выполнил условие 4 живых людей — призы свободны!")}</li>`; }
+  const AL=mrAlloc(rows);
+  l.innerHTML=st+(rows.length?rows.map(([id,x],k)=>`<li class="${id===me?"me":""}" data-rkid="${esc(id)}"><span class="rk-pos${k<3?" m":""}">${["🥇","🥈","🥉"][k]||k+1}</span><span class="rk-nm"><b>${esc(x.nm)}${id===me?(uz?" (siz)":" (вы)"):""}${hpBadge(id===me?hpPts():x.hp,true,{nm:x.nm,hb:id===me?hpCnt():x.hb})}${W.some(w=>w[2]===id)?`<i class="hp-b hp3 sm" title="Marafon g‘olibi">🏆</i>`:""}</b><span>${esc(mrBreak(x.mr,uz))}</span></span><span class="rk-n"><b>${x.mr.p}</b><span>${uz?"ball":"б."}</span>${AL[id]?`<i class="mr-pz">💰 ${mrSum(AL[id],!uz)}</i>`:""}</span></li>`).join(""):`<li class="rk-empty">${uz?"Hali hech kimda ball yo‘q. Birinchi bo‘ling — linkingizni yuboring! 📤":"Пока ни у кого нет баллов. Будьте первым — отправьте ссылку! 📤"}</li>`); }
+async function mrClaim(){ const ru=state.lang==="ru"; const me=rkId(), W=mrWinners(), w=W.find(x=>x[2]===me); if(!w) return;
+  hpSheet(`<h4>🎁 ${ru?"Получить приз":"Mukofotni olish"}</h4><p class="mu">${ru?"Поздравляем! Напишите номер Click/Payme или Telegram — переведём в течение 7 дней.":"Tabriklaymiz! Click/Payme raqamingiz yoki Telegram’ingizni yozing — 7 kun ichida o‘tkaziladi."}</p><input class="ch-in" id="mr-claim" maxlength="120" placeholder="+998 __ ___ __ __ / @telegram" value="${esc(localStorage.getItem(accK("mr:claim"))||"")}"><div class="ch-btns"><button type="button" class="btn primary" data-mr="claimgo">${ru?"Отправить":"Yuborish"}</button><button type="button" class="btn" data-hpx="1">${ru?"Закрыть":"Yopish"}</button></div><p class="mu" id="mr-claimst"></p>`); }
+async function mrClaimGo(){ const ru=state.lang==="ru", i=document.getElementById("mr-claim"), st=document.getElementById("mr-claimst"); const v=(i&&i.value||"").trim(); if(v.length<5){ if(st) st.textContent=ru?"Напишите номер или @ник":"Raqam yoki @nik yozing"; return; }
+  try{ const pid=await cmPid(); await fsPut("mr/claim_"+pid,{c:fsS(v.slice(0,120)+" · "+rkName()),t:fsI(Date.now())}); localStorage.setItem(accK("mr:claim"),v); if(st) st.textContent="✅ "+(ru?"Отправлено. Мы свяжемся с вами.":"Yuborildi. Siz bilan bog‘lanamiz."); }catch(e){ if(st) st.textContent=ru?"Не удалось — проверьте интернет":"Bo‘lmadi — internetni tekshiring"; } }
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-mr]"); if(!b) return; const a=b.dataset.mr;
+  if(a==="rules") mrRules(); else if(a==="reg"){ const o=document.getElementById("hp-ov"); if(o) o.hidden=true; accLogin(); }
+  else if(a==="friends"){ mrFriends(); }
+  else if(a==="close"){ try{ localStorage.setItem("mr:col","1"); }catch(x){} mrHomeDraw(); } else if(a==="open"){ try{ localStorage.removeItem("mr:col"); }catch(x){} mrHomeDraw(); }
+  else if(a==="claim") mrClaim(); else if(a==="claimgo") mrClaimGo(); });
+setTimeout(async()=>{ try{ if(!mrOn()) return; if(ACC.cur) await hpRefCode(); await Promise.all([mrCfgLoad(),mrTopLoad()]); mrHomeDraw(); if(ACC.cur&&mrActive()){ rkCacheLoad(); mrHomeDraw(); try{ mrTopPush(); }catch(e){} } }catch(e){} },2500);
+document.addEventListener("click",e=>{ if(e.target.closest("[data-lang]")) setTimeout(mrHomeDraw,50); });
+/* ---- ustoz paneli: tekshiruv (📈 Tahlil ichida) ---- */
+async function mrTpLoad(){ if(TP.mrL) return; TP.mrL=1; try{ await mrCfgLoad(); const R=[]; let tok="",n=0; do{ const r=await fetch(FS_BASE+"ref?pageSize=300"+(tok?"&pageToken="+encodeURIComponent(tok):""),{cache:"no-store"}); if(!r.ok) break; const j=await r.json(); (j.documents||[]).forEach(d=>{ const F=d.fields||{}; R.push({id:d.name.split("/").pop(),by:(F.by||{}).stringValue||"",nm:(F.nm||{}).stringValue||"",w:+((F.w||{}).integerValue||0),gr:+((F.gr||{}).integerValue||0),t:+((F.t||{}).integerValue||0),k:(F.k||{}).stringValue||""}); }); tok=j.nextPageToken||""; }while(tok&&++n<20); TP.mrRef=R;
+    const C=[]; try{ const r=await fetch(FS_BASE+"mr?pageSize=100",{cache:"no-store"}); if(r.ok){ const j=await r.json(); (j.documents||[]).forEach(d=>{ const id=d.name.split("/").pop(); if(id.startsWith("claim_")) C.push({id,c:((d.fields||{}).c||{}).stringValue||"",t:+(((d.fields||{}).t||{}).integerValue||0)}); }); } }catch(e){} TP.mrClaims=C;
+    for(const [id,d] of Object.entries(TP.stu||{})){ if(d&&d.ak&&!d._rc){ const h=await cloudSha("streber.uz/ref/v1:"+d.ak); let v=parseInt(h.slice(8,16),16), c=""; for(let i=0;i<6;i++){ c+=REF_AB[v&31]; v=Math.floor(v/32); } d._rc=c; d._rc8=h.slice(0,8); } }
+  }catch(e){} TP.mrL=0; if(TP.tab==="an") tpStDrawSoon(); }
+function mrTpHTML(){ const S=Object.entries(TP.stu||{}).filter(([id,d])=>d&&d.nm), R=TP.mrRef||[], X=new Set((MR.cfg&&MR.cfg.x)||[]), W=mrWinners(), d=mrDays();
+  if(!TP.mrL&&!TP.mrRef) mrTpLoad();
+  const byNm={}; S.forEach(([id,d])=>{ byNm[String(d.nm).trim().toLowerCase()]=d; });
+  const rows=S.map(([id,d])=>{ const m=d.mr||{p:0,ref:0,r100:0,app:0,sh:0,ch:0,fb:0}; const fr=R.filter(r=>r.nm&&(r.by===d._rc||r.by===d._rc8)).map(r=>{ const f=byNm[String(r.nm).trim().toLowerCase()]; const days=f&&f.a&&f.a.dd?f.a.dd.filter(x=>x[1]>=60).length:null, games=f?((f.g||[]).length+(f.l||[]).filter(x=>/^(du|dc|lt|kg|ch)$/.test(x[1])).length):null; const real=r.w>=100||(r.gr|0)>=MR.GR; const sus=!f||(real&&days!=null&&days<3)||(f&&games===0&&real); return {nm:r.nm,w:r.w,gr:r.gr|0,days,games,sus,t:r.t}; }); const vis=R.filter(r=>!r.nm&&(r.by===d._rc||r.by===d._rc8)), inst=vis.filter(r=>r.k==="a").length;
+    const rk=d.ak?audId("rk:"+d.ak):id; return {id,rk,d,m,fr,vis:vis.length,inst,sus:fr.some(f=>f.sus),x:X.has(rk)}; }).filter(r=>r.m.p>0||r.fr.length).sort((a,b)=>b.m.p-a.m.p||(a.m.t||0)-(b.m.t||0));
+  const parts=rows.length, TAL=mrAlloc(rows.filter(r=>!r.x).map(r=>[r.rk,{mr:r.m}])), minOk=Object.keys(TAL).length, pay=Object.values(TAL).reduce((s,v)=>s+v,0), frN=rows.reduce((s,r)=>s+r.fr.length,0), fr100=rows.reduce((s,r)=>s+r.fr.filter(f=>f.w>=100||f.gr>=MR.GR).length,0), instN=rows.reduce((s,r)=>s+r.inst,0);
+  const canAnn=Date.now()>=MR.ANN;
+  return `<div class="lrn-card tp-mr"><div class="tp-lbh"><h3>📣 Marafon · ${mrActive()?d+" kun":"tugadi"}</h3><span class="ch-net">${TP.mrL?"yuklanmoqda…":"23.10 – 15.11"}</span></div>
+    <p>Ishtirokchi: <b>${parts}</b> · sovringa haqli: <b>${minOk}</b> · hozirgi to‘lov: <b>${mrSum(pay)} so‘m</b> · olib kelingan do‘st: <b>${frN}</b> (100 so‘zga yetgan ${fr100}) · link orqali ilova o‘rnatgan: <b>${instN}</b>${W.length?` · 🏆 e’lon qilingan`:""}</p>
+    <ol class="tp-mrl">${rows.map((r,i)=>`<li class="${r.x?"x":""}${r.sus?" sus":""}"><div class="tp-mrh"><span class="rk-pos">${r.x?"🚫":(["🥇","🥈","🥉"][i]||i+1)}</span><b>${esc(r.d.nm)}</b> — <b>${r.m.p}</b> ball${!r.x&&TAL[r.rk]?` · 💰 ${mrSum(TAL[r.rk])}`:` · 👥 ${r.m.r100|0}/${MR.NEED}`} <small>${esc(mrBreak(r.m,true))}${r.vis?` · ochishlar ${r.vis}`:""}</small>${r.sus?` <i class="tp-flag">shubhali</i>`:""}<button type="button" class="lrn-link" data-tpmr="x" data-id="${esc(r.rk)}">${r.x?"↩ qaytarish":"🚫 Chetlatish"}</button></div>
+      ${r.fr.length?`<div class="tp-mrf">${r.fr.map(f=>`<span class="${f.sus?"sus":"ok"}">${esc(f.nm)} · ${f.w} so‘z${f.gr?` · ${f.gr} gram.`:""}${f.days!=null?` · ${f.days} kun`:""}${f.games!=null?` · ${f.games} o‘yin`:""}${f.sus?" ⚠️":" ✓"}</span>`).join("")}</div>`:""}</li>`).join("")||"<li class='tp-empty'>Hali hech kimda ball yo‘q.</li>"}</ol>
+    <div class="ch-btns"><button type="button" class="btn${canAnn?" primary":""}" data-tpmr="ann" ${canAnn?"":"disabled"} title="16.11 dan">🏆 G‘oliblarni e’lon qilish${W.length?" (qayta)":""}</button><button type="button" class="btn" data-tpmr="reload">↻ Yangilash</button></div>
+    ${W.length?`<p>🏆 E’lon qilingan: ${W.map((w,i)=>`${mrMedal(i)} ${esc(w[0])} ${w[1]}${w[3]?` · ${mrSum(w[3])}`:""}`).join(" · ")}</p>`:""}
+    ${(TP.mrClaims||[]).length?`<p><b>🎁 Mukofot so‘rovlari:</b></p><ul class="tp-mrc">${TP.mrClaims.map(c=>`<li>${esc(c.c)} <small>${new Date(c.t).toLocaleDateString()}</small></li>`).join("")}</ul>`:""}
+    <p class="ch-net">«Shubhali» — do‘sti bazada yo‘q, yoki 100 so‘zga 3 kundan kam faollik bilan yetgan, yoki hech o‘ynamagan. Yakuniy qaror sizniki.</p></div>`; }
+async function mrTpSave(){ try{ const c=MR.cfg||{x:[],w:[]}; await fsPut("mr/cfg",{x:fsS(JSON.stringify(c.x||[]).slice(0,4000)),w:fsS(JSON.stringify(c.w||[]).slice(0,2000)),t:fsI(Date.now())}); c._t=Date.now(); localStorage.setItem("mr:cfg",JSON.stringify(c)); }catch(e){ alert("Saqlab bo‘lmadi — internetni tekshiring."); } }
+document.addEventListener("click",async e=>{ const b=e.target.closest("[data-tpmr]"); if(!b||!tchOk()) return; const a=b.dataset.tpmr;
+  if(a==="reload"){ TP.mrRef=null; TP.mrL=0; try{ localStorage.removeItem("mr:cfg"); }catch(x){} MR.cfg=null; mrTpLoad(); return; }
+  if(a==="x"){ const id=b.dataset.id; MR.cfg=MR.cfg||{x:[],w:[]}; const i=(MR.cfg.x||[]).indexOf(id); if(i>=0) MR.cfg.x.splice(i,1); else (MR.cfg.x=MR.cfg.x||[]).push(id); await mrTpSave(); tpStDrawSoon(); return; }
+  if(a==="ann"){ const S=Object.entries(TP.stu||{}).filter(([id,d])=>d&&d.nm&&d.mr&&d.mr.p>0).map(([id,d])=>({rk:d.ak?audId("rk:"+d.ak):id,nm:d.nm,p:d.mr.p,t:d.mr.t||0,m:d.mr})).filter(r=>!((MR.cfg&&MR.cfg.x)||[]).includes(r.rk)).sort((a,b)=>b.p-a.p||a.t-b.t);
+    const AL=mrAlloc(S.map(r=>[r.rk,{mr:r.m}])), W=S.filter(r=>AL[r.rk]).map(r=>[r.nm,r.p,r.rk,AL[r.rk]]);
+    if(!W.length){ alert("Hech kim 4 ta jonli odam shartini bajarmagan — e’lon qilinmaydi."); return; }
+    if(!confirm("E’lon qilinsinmi?\\n"+W.map((w,i)=>`${mrMedal(i)} ${w[0]} — ${w[1]} ball · ${mrSum(w[3])} so‘m`).join("\\n")+"\\nJami: "+mrSum(W.reduce((s,w)=>s+w[3],0))+" so‘m")) return;
+    MR.cfg=MR.cfg||{x:[],w:[]}; MR.cfg.w=W; await mrTpSave(); tpStDrawSoon(); } });
+
 /* o'zim yaratgan Challenge'da yangi o'yinchi */
 function hpChMine(id){ try{ const L=JSON.parse(localStorage.getItem(accK("ch:mine"))||"[]"); if(!L.includes(id)){ L.push(id); localStorage.setItem(accK("ch:mine"),JSON.stringify(L.slice(-30))); } }catch(e){} }
 function hpChScan(){ try{ if(!ACC.cur||!CHS.id) return; const L=JSON.parse(localStorage.getItem(accK("ch:mine"))||"[]"); if(!L.includes(CHS.id)) return; const ru=state.lang==="ru";
   Object.entries(CHS.players||{}).forEach(([pid,p])=>{ if(pid===CHS.me||!p||!p.n) return; hpAdd("ch",2,ru?`${p.n} сыграл в ваш Challenge`:`${p.n} sizning Challenge’ingizda o‘ynadi`,"ch:"+CHS.id+":"+pid); }); }catch(e){} }
 /* ustoz rahmati: Firestore th/<hash> + MQTT */
 async function hpThId(ak){ return (await cloudSha("streber.uz/th/v1:"+ak)).slice(0,24); }
-async function hpThPull(){ try{ if(!CLOUD_ON||!ACC.cur||window.BLITZ) return; const f=await fsGet("th/"+await hpThId(ACC.cur)); if(!f||!f.l) return; const L=JSON.parse(f.l.stringValue||"[]"); L.forEach(x=>hpAdd("th",x[2]|0,x[3],"th:"+x[0])); }catch(e){} }
-async function tpThank(ak,nm,pts,msg){ try{ const id=await hpThId(ak), f=await fsGet("th/"+id); let L=[]; try{ L=f&&f.l?JSON.parse(f.l.stringValue||"[]"):[]; }catch(e){} const rec=[Math.random().toString(36).slice(2,10),Date.now(),pts|0,String(msg||"").slice(0,80)]; L.push(rec); L=L.slice(-40);
+async function hpThPull(){ try{ if(!CLOUD_ON||!ACC.cur||window.BLITZ) return; const f=await fsGet("th/"+await hpThId(ACC.cur)); if(!f||!f.l) return; const L=JSON.parse(f.l.stringValue||"[]"); L.forEach(x=>hpAdd(x[4]||"th",x[2]|0,x[3],"th:"+x[0])); }catch(e){} }
+async function tpThank(ak,nm,pts,msg,kind){ try{ const id=await hpThId(ak), f=await fsGet("th/"+id); let L=[]; try{ L=f&&f.l?JSON.parse(f.l.stringValue||"[]"):[]; }catch(e){} const rec=[Math.random().toString(36).slice(2,10),Date.now(),pts|0,String(msg||"").slice(0,80)]; if(kind) rec.push(kind); L.push(rec); L=L.slice(-40);
   await fsPut("th/"+id,{l:fsS(JSON.stringify(L)),t:fsI(Date.now())}); try{ if(TP.mqSt) TP.mqSt.pub(TH_NS+id,JSON.stringify(rec),false); }catch(e){} const o=kgLS("tch:thanks",[]); o.unshift([Date.now(),nm,pts|0,msg]); kgLSset("tch:thanks",o.slice(0,100)); return true; }catch(e){ return false; } }
 const TH_NS="streber/th/v1/";
-async function hpThListen(){ try{ if(!ACC.cur||window.BLITZ||HP_MQ) return; const id=await hpThId(ACC.cur); HP_MQ=mqMulti(cl=>cl.subscribe(TH_NS+id,{qos:1}),(t,m)=>{ try{ const x=JSON.parse(m); if(x&&x[0]) hpAdd("th",x[2]|0,x[3],"th:"+x[0]); }catch(e){} }); }catch(e){} }
+async function hpThListen(){ try{ if(!ACC.cur||window.BLITZ||HP_MQ) return; const id=await hpThId(ACC.cur); HP_MQ=mqMulti(cl=>cl.subscribe(TH_NS+id,{qos:1}),(t,m)=>{ try{ const x=JSON.parse(m); if(x&&x[0]) hpAdd(x[4]||"th",x[2]|0,x[3],"th:"+x[0]); }catch(e){} }); }catch(e){} }
 let HP_MQ=null;
 function hpCardHTML(d,own){ const ru=state.lang==="ru", p=own?hpPts():(d.hp|0), k=hpLv(p), L=HP_LV[k], nx=HP_LV[k+1], prev=L[0]||0, pct=nx?Math.round((p-prev)/(nx[0]-prev)*100):100, ev=own?(hpGet().ev||[]).slice(-5).reverse():[];
   const KN={fb:ru?"👎 ошибка":"👎 xato",share:ru?"📤 поделился":"📤 ulashdi",ref:ru?"👥 друг":"👥 do‘st",ch:ru?"⚡ Challenge":"⚡ Challenge",th:ru?"🎓 учитель":"🎓 ustoz"};
   return `<h5>🏅 ${ru?"Вклад в сайт":"Saytga hissa"}<small>${p} ${ru?"балл":"ball"}</small></h5><div class="hp-card">
-    <div class="hp-top">${k?`<span class="hp-b hp${k}">${L[1]} ${esc(ru?L[3]:L[2])}</span>`:`<span class="hp-b hp0">${ru?"пока без уровня":"hali darajasiz"}</span>`}${nx?`<small>${ru?"до":"keyingi"} ${nx[1]} ${esc(ru?nx[3]:nx[2])}: ${nx[0]-p} ${ru?"балл":"ball"}</small>`:`<small>${ru?"максимум!":"eng yuqori daraja!"}</small>`}</div>
+    <div class="hp-top">${k?`<span class="hp-b hp${k}" data-hpk="${k}" data-hpp="${p}"${own?` data-hpc="${esc(JSON.stringify(hpCnt()||{}))}"`:d.hb?` data-hpc="${esc(typeof d.hb==="string"?d.hb:JSON.stringify(d.hb))}"`:""}>${L[1]} ${esc(ru?L[3]:L[2])}</span>`:`<span class="hp-b hp0">${ru?"пока без уровня":"hali darajasiz"}</span>`}${nx?`<small>${ru?"до":"keyingi"} ${nx[1]} ${esc(ru?nx[3]:nx[2])}: ${nx[0]-p} ${ru?"балл":"ball"}</small>`:`<small>${ru?"максимум!":"eng yuqori daraja!"}</small>`}</div>
     <div class="hp-prog"><i style="width:${Math.max(3,Math.min(100,pct))}%"></i></div>
-    ${own?`<div class="hp-how">${ru?"👎 ошибка +1 · 📤 поделиться +1 · 👥 друг по ссылке +3 (после 100 слов ещё +5) · ⚡ новый игрок в вашем Challenge +2 · 🎓 спасибо от учителя +5":"👎 xato +1 · 📤 ulashish +1 · 👥 do‘st link bilan +3 (100 so‘zdan keyin yana +5) · ⚡ Challenge’ingizda yangi odam +2 · 🎓 ustoz rahmati +5"}</div>
-    <div class="hp-ref"><b>${ru?"Ваша ссылка для друзей":"Do‘stlar uchun linkingiz"}</b><div class="ch-link" id="hp-link">…</div><div class="ch-btns"><button type="button" class="btn primary" data-hpref="share">📤 ${ru?"Отправить другу":"Do‘stga yuborish"}</button><button type="button" class="btn" data-hpref="copy">📋 ${ru?"Копировать":"Nusxalash"}</button></div></div>
+    ${own?`<div class="hp-how">${ru?"👎 ошибка (после проверки) +1 · 🔗 открыли ссылку +1 · 👥 пришедший через вас +1 (выучит 100 слов или сделает 5 заданий по грамматике — ещё +6) · 📲 сами установили приложение +10 · ⚡ новый игрок в вашем Challenge +2 · 🎓 спасибо от учителя +5":"👎 xato (ustoz tasdiqlasa) +1 · 🔗 linkni ochishdi +1 · 👥 siz orqali kelgan odam +1 (100 so‘zni yodlasa yoki 5 ta grammatika mashqini qilsa yana +6) · 📲 ilovani o‘zingiz o‘rnatsangiz +10 · ⚡ Challenge’ingizda yangi odam +2 · 🎓 ustoz rahmati +5"}</div>
+    ${mrOn()&&mrActive()?`<div class="mr-line">📣 ${ru?"Марафон (до 15.11)":"Marafon (15.11 gacha)"}: <b>${mrCalc().p}</b> ${ru?"баллов":"ball"}${mrMyPos()?` · ${mrMyPos()}-${ru?"е место":"o‘rin"}`:""} · <button type="button" class="lrn-link" data-mr="rules">${ru?"Правила":"Qoidalar"}</button></div>`:""}<button type="button" class="lrn-link" data-hphow="1">❓ ${ru?"Как получить звание?":"Unvon qanday olinadi?"}</button><div class="hp-ref"><b>${ru?"Ваша ссылка для друзей":"Do‘stlar uchun linkingiz"}</b><div class="ch-link" id="hp-link">…</div><div class="ch-btns"><button type="button" class="btn primary" data-hpref="share">📤 ${ru?"Отправить другу":"Do‘stga yuborish"}</button><button type="button" class="btn" data-hpref="copy">📋 ${ru?"Копировать":"Nusxalash"}</button></div></div>
     ${ev.length?`<div class="sp-log hp-log">${ev.map(x=>`<div><time>${spWhen(x[0],ru?false:true)}</time><b>+${x[2]} · ${KN[x[1]]||x[1]}</b><i>${esc(x[3]||"")}</i></div>`).join("")}</div>`:""}`:""}</div>`; }
-async function hpCardBind(root){ const l=root.querySelector("#hp-link"); if(!l) return; const code=await hpRefCode(), url=hpRefLink(code); l.textContent=url;
-  root.querySelectorAll("[data-hpref]").forEach(b=>b.addEventListener("click",async e=>{ e.stopPropagation(); const ru=state.lang==="ru", txt=ru?`Учу немецкий на streber.uz — бесплатно: слова, игры, упражнения. Заходи по моей ссылке:`:`Nemis tilini streber.uz da o‘rganyapman — bepul: so‘zlar, o‘yinlar, mashqlar. Mening linkim bilan kir:`;
-    if(b.dataset.hpref==="copy"){ (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{ b.textContent="✓"; }).catch(()=>prompt("",url)); return; }
-    try{ if(navigator.share){ await navigator.share({text:txt+"\n"+url}); return; } }catch(err){ if(err&&err.name==="AbortError") return; } window.open("https://t.me/share/url?url="+encodeURIComponent(url)+"&text="+encodeURIComponent(txt),"_blank","noopener"); })); }
+/* «Linkimni yuborish» — butun saytda bitta delegatsiya (2026-10-23: bosh sahifa kartasi va Qoidalar oynasida tugma ulanmagan edi — «link bosilmayapti») */
+async function hpCardBind(root){ try{ const l=root&&root.querySelector("#hp-link"); if(!l) return; const code=await hpRefCode(); l.textContent=hpRefLink(code); }catch(e){} }
+document.addEventListener("click",async e=>{ const b=e.target.closest&&e.target.closest("[data-hpref]"); if(!b) return; e.preventDefault(); e.stopPropagation(); if(!ACC.cur){ try{ accLogin(); }catch(er){} return; }
+  const ru=state.lang==="ru", code=HP_REF||await hpRefCode(), url=hpRefLink(code), txt=ru?`Учу немецкий на streber.uz — бесплатно: слова, игры, упражнения. Заходи по моей ссылке:`:`Nemis tilini streber.uz da o‘rganyapman — bepul: so‘zlar, o‘yinlar, mashqlar. Mening linkim bilan kir:`;
+  try{ actEv("share","ref"); }catch(er){}
+  if(b.dataset.hpref==="copy"){ (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{ b.textContent="✓"; }).catch(()=>prompt("",url)); return; }
+  try{ if(navigator.share){ await navigator.share({text:txt+"\n"+url}); return; } }catch(err){ if(err&&err.name==="AbortError") return; }
+  /* kompyuter: Telegram ulashish oynasi; bloklansa — linkni nusxalash */
+  const w=window.open("https://t.me/share/url?url="+encodeURIComponent(url)+"&text="+encodeURIComponent(txt),"_blank","noopener"); if(!w){ try{ await navigator.clipboard.writeText(url); hpToastMsg&&hpToastMsg(ru?"Ссылка скопирована":"Link nusxalandi"); }catch(er){ prompt("",url); } } },true);
+setTimeout(()=>{ try{ if(ACC.cur&&!window.BLITZ) hpRefCode(); }catch(e){} },800); /* kod oldindan tayyor — telefonda share «bosish» ichida chaqirilsin */
 function rkId(){ return ACC.cur? audId("rk:"+ACC.cur) : null; }
 function rankSync(force){
   if(!ACC.cur||IN_ARTIFACT||tchOk()) return; /* ustoz qurilmasidan reytingga yozilmaydi */
@@ -4772,8 +5085,8 @@ function rkEl(){ let e=document.getElementById("rank"); if(!e){ e=document.creat
 function rankOpen(){
   const uz=state.lang!=="ru"; RK.open=true; RK.list={}; RK.net="wait";
   const el=rkEl(); el.hidden=false; document.body.style.overflow="hidden";
-  el.innerHTML=`<div class="lrn-bar"><button class="btn" data-rk="close" aria-label="✕">✕</button><div class="lrn-tt"><b>🏆 ${uz?"Umumiy reyting":"Общий рейтинг"}</b><small>${uz?"o‘rganilgan so‘zlar bo‘yicha":"по выученным словам"}</small></div></div>
-    <div class="rk-wrap"><div class="tp-seg rk-seg"><button type="button" data-rkm="w" aria-pressed="true">🧠 ${uz?"So‘zlar":"Слова"}</button><button type="button" data-rkm="g" aria-pressed="false">🎮 ${uz?"Haftalik o‘yinlar":"Игры недели"}</button></div><div class="rk-head" id="rk-hd"></div>
+  el.innerHTML=`<div class="lrn-bar"><button class="btn" data-rk="close" aria-label="✕">✕</button><div class="lrn-tt"><b>🏆 ${uz?"Umumiy reyting":"Общий рейтинг"}</b><small id="rk-sub">${uz?"o‘rganilgan so‘zlar bo‘yicha":"по выученным словам"}</small></div></div>
+    <div class="rk-wrap"><div class="tp-seg rk-seg"><button type="button" data-rkm="w" aria-pressed="true">🧠 ${uz?"So‘zlar":"Слова"}</button><button type="button" data-rkm="g" aria-pressed="false">🎮 ${uz?"Haftalik o‘yinlar":"Игры недели"}</button>${mrOn()?`<button type="button" data-rkm="m" aria-pressed="false">📣 ${uz?"Marafon":"Марафон"}</button>`:""}</div><div class="rk-head" id="rk-hd"></div>
     <div id="rk-me"></div><ol class="rk-list" id="rk-list"><li class="rk-empty">${uz?"Yuklanmoqda…":"Загрузка…"}</li></ol><div class="rk-net" id="rk-net"></div></div>`;
   rankSync(true); rankCloud();
   chLib(()=>{ if(!window.mqtt||!RK.open){ if(!RK.fs) rkNet("bad"); return; } let okN=0, done=0;
@@ -4787,31 +5100,37 @@ function rankOpen(){
     }catch(e){} }); });
 }
 /* Reyting bazadan (Firestore "s" hujjatlari — har o'quvchi o'z natijasini yozadi, yo'qolmaydi) */
-async function rankCloud(){ if(!CLOUD_ON) return; try{ let tok="", n=0, got=0;
-  do{ const r=await fetch(FS_BASE+"s?pageSize=300&mask.fieldPaths=rk&mask.fieldPaths=nm&mask.fieldPaths=n&mask.fieldPaths=lv&mask.fieldPaths=t&mask.fieldPaths=gw&mask.fieldPaths=gp&mask.fieldPaths=pw&mask.fieldPaths=pp&mask.fieldPaths=hp&mask.fieldPaths=app"+(tok?"&pageToken="+encodeURIComponent(tok):""),{cache:"no-store"}); if(!r.ok) break; const j=await r.json();
+const RK_TTL=20*60000;
+function rkCacheLoad(){ try{ const c=JSON.parse(localStorage.getItem("rk:cache")||"null"); if(!c||!c.l) return 0; Object.entries(c.l).forEach(([id,x])=>{ const o=RK.list[id]; if(!o||(x.t||0)>=(o.t||0)) RK.list[id]=Object.assign({},o||{},x); }); RK.fs=RK.fs||Object.keys(c.l).length; return c.t||0; }catch(e){ return 0; } }
+function rkCacheSave(){ try{ const l={}; Object.entries(RK.list).forEach(([id,x])=>{ if(x.fs) l[id]=x; }); localStorage.setItem("rk:cache",JSON.stringify({t:Date.now(),l})); }catch(e){} }
+async function rankCloud(force){ if(!CLOUD_ON) return; const ct=rkCacheLoad(); if(!force&&ct&&Date.now()-ct<RK_TTL){ if(RK.open){ rkNet(RK.net==="ok"?"ok":"fs"); rankDrawSoon(); } return; }
+  try{ let tok="", n=0, got=0;
+  do{ const r=await fetch(FS_BASE+"s?pageSize=300&mask.fieldPaths=rk&mask.fieldPaths=nm&mask.fieldPaths=n&mask.fieldPaths=lv&mask.fieldPaths=t&mask.fieldPaths=gw&mask.fieldPaths=gp&mask.fieldPaths=pw&mask.fieldPaths=pp&mask.fieldPaths=hp&mask.fieldPaths=hb&mask.fieldPaths=app&mask.fieldPaths=pid&mask.fieldPaths=g&mask.fieldPaths=nw&mask.fieldPaths=mr&mask.fieldPaths=rc"+(tok?"&pageToken="+encodeURIComponent(tok):""),{cache:"no-store"}); if(!r.ok) break; const j=await r.json();
     for(const doc of (j.documents||[])){ const F=doc.fields||{}; if(!F.nm||!F.n) continue; const id=(F.rk&&F.rk.stringValue)||("c:"+doc.name.split("/").pop()), nm=String(F.nm.stringValue||"").slice(0,30), nn=+(F.n.integerValue||0), t=+((F.t||{}).integerValue||0);
-      if(!nm||!(nn>=0&&nn<5000)) continue; const o=RK.list[id], g={gw:(F.gw||{}).stringValue||"",gp:+((F.gp||{}).integerValue||0),pw:(F.pw||{}).stringValue||"",pp:+((F.pp||{}).integerValue||0),hp:+((F.hp||{}).integerValue||0),app:+((F.app||{}).integerValue||0)}; if(!o||t>=(o.t||0)) RK.list[id]=Object.assign({nm,n:nn|0,t,fs:1},g); else Object.assign(o,g); got++; }
+      if(!nm||!(nn>=0&&nn<5000)) continue; const o=RK.list[id], g={gw:(F.gw||{}).stringValue||"",gp:+((F.gp||{}).integerValue||0),pw:(F.pw||{}).stringValue||"",pp:+((F.pp||{}).integerValue||0),hp:+((F.hp||{}).integerValue||0),hb:(F.hb||{}).stringValue||"",app:+((F.app||{}).integerValue||0),pid:(F.pid||{}).stringValue||"",g:(F.g||{}).stringValue||"",nw:+((F.nw||{}).integerValue||0),mr:(()=>{ try{ return JSON.parse((F.mr||{}).stringValue||"null"); }catch(e){ return null; } })(),rc:(F.rc||{}).stringValue||""}; if(!o||t>=(o.t||0)) RK.list[id]=Object.assign({nm,n:nn|0,t,fs:1},g); else Object.assign(o,g); got++; }
     tok=j.nextPageToken||""; }while(tok&&++n<30);
-  RK.fs=got; if(RK.open){ rkNet(RK.net==="ok"?"ok":"fs"); rankDrawSoon(); } }catch(e){} }
+  RK.fs=got; if(got) rkCacheSave(); if(RK.open){ rkNet(RK.net==="ok"?"ok":"fs"); rankDrawSoon(); } try{ mrTopPush(); }catch(e){} }catch(e){} }
 function rkNet(s){ RK.net=s; const e=document.getElementById("rk-net"), uz=state.lang!=="ru"; if(e) e.textContent= s==="ok"?(uz?"🟢 Jonli — natijalar o‘zi yangilanadi":"🟢 Онлайн — обновляется само"): s==="fs"?(uz?"☁️ Bazadan yuklandi":"☁️ Загружено из базы"): s==="bad"?(uz?"🔴 Internetga ulanib bo‘lmadi. Keyinroq urinib ko‘ring.":"🔴 Нет соединения. Попробуйте позже."):(uz?"⏳ Ulanmoqda…":"⏳ Подключение…");
   if(s==="bad"){ const l=document.getElementById("rk-list"); if(l&&!Object.keys(RK.list).length) l.innerHTML=`<li class="rk-empty">—</li>`; } }
 let rkT=null; function rankDrawSoon(){ clearTimeout(rkT); rkT=setTimeout(rankDraw,250); }
 function rankDraw(){
   const l=document.getElementById("rk-list"); if(!l) return; const uz=state.lang!=="ru", me=rkId();
   document.querySelectorAll("[data-rkm]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.rkm===(RK.mode||"w"))));
+  const rs=document.getElementById("rk-sub"); if(rs) rs.textContent=RK.mode==="m"?(uz?"📣 Tarqatish marafoni · 15-noyabrgacha":"📣 Марафон приглашений · до 15 ноября"):RK.mode==="g"?(uz?"haftalik o‘yin ballari bo‘yicha":"по игровым баллам недели"):(uz?"o‘rganilgan so‘zlar bo‘yicha":"по выученным словам");
   const hd=document.getElementById("rk-hd"); if(hd) hd.innerHTML=RK.mode==="g"?`<h2>${uz?"🎮 Haftalik o‘yin reytingi":"🎮 Игровой рейтинг недели"}</h2><p>${uz?"Live test, Challenge, Sinf o‘yini va Duel — har to‘g‘ri javob 10 ball. Hafta dushanbadan boshlanadi.":"Live test, Challenge, игра в классе и дуэль — 10 баллов за верный ответ. Неделя начинается с понедельника."}</p>`:`<h2>${uz?"Kim ko‘proq so‘z biladi?":"Кто знает больше слов?"}</h2><p>${uz?"Saytda ro‘yxatdan o‘tgan o‘quvchilar. Yodlash’da so‘z o‘rgansangiz — o‘rningiz ko‘tariladi.":"Ученики, зарегистрированные на сайте. Учите слова в «Учить» — и поднимайтесь выше."}</p>`;
+  if(RK.mode==="m"){ mrRankDraw(l,hd,uz,me); return; }
   if(RK.mode==="g"){ const cw=gpWeek(), pw=gpPrevWeek(), mine=gpGet(); if(me&&RK.list[me]&&mine.p) Object.assign(RK.list[me],{gw:cw,gp:Math.max(RK.list[me].gw===cw?RK.list[me].gp|0:0,mine.p)});
     const rows=Object.entries(RK.list).filter(([id,x])=>x.gw===cw&&x.gp>0).sort((a,b)=>b[1].gp-a[1].gp);
     const last=Object.entries(RK.list).map(([id,x])=>[x.nm, x.gw===pw?x.gp|0:x.pw===pw?x.pp|0:0]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1])[0];
     const win=last?`<li class="rk-win">🏆 ${uz?"O‘tgan hafta g‘olibi":"Победитель прошлой недели"}: <b>${esc(last[0])}</b> · ${last[1]} ${uz?"ball":"баллов"}</li>`:"";
-    let myPos=0; l.innerHTML=win+(rows.length?rows.map(([id,x],k)=>{ if(id===me) myPos=k+1; return `<li class="${id===me?"me":""}"><span class="rk-pos${k<3?" m":""}">${["🥇","🥈","🥉"][k]||k+1}</span><span class="rk-nm"><b>${esc(x.nm)}${id===me?(uz?" (siz)":" (вы)"):""}${hpBadge(id===me?hpPts():x.hp,true)}</b></span><span class="rk-n"><b>${x.gp}</b><span>${uz?"ball":"баллов"}</span></span></li>`; }).join(""):`<li class="rk-empty">${uz?"Bu hafta hali hech kim o‘ynamadi. Birinchi bo‘ling! 🎮":"На этой неделе ещё никто не играл. Будьте первым! 🎮"}</li>`);
+    let myPos=0; l.innerHTML=win+(rows.length?rows.map(([id,x],k)=>{ if(id===me) myPos=k+1; return `<li class="${id===me?"me":""}" data-rkid="${esc(id)}"><span class="rk-pos${k<3?" m":""}">${["🥇","🥈","🥉"][k]||k+1}</span><span class="rk-nm"><b>${esc(x.nm)}${id===me?(uz?" (siz)":" (вы)"):""}${hpBadge(id===me?hpPts():x.hp,true,{nm:x.nm,hb:id===me?hpCnt():x.hb})}</b></span><span class="rk-n"><b>${x.gp}</b><span>${uz?"ball":"баллов"}</span></span></li>`; }).join(""):`<li class="rk-empty">${uz?"Bu hafta hali hech kim o‘ynamadi. Birinchi bo‘ling! 🎮":"На этой неделе ещё никто не играл. Будьте первым! 🎮"}</li>`);
     const m=document.getElementById("rk-me"); if(m) m.innerHTML=!ACC.cur?`<div class="rk-me">${uz?"Reytingga kirish uchun ro‘yxatdan o‘ting (👤 ism + parol).":"Чтобы попасть в рейтинг, зарегистрируйтесь (👤 имя + пароль)."}</div>`:`<div class="rk-me">${uz?`Bu hafta sizda <b>${mine.p}</b> ball${myPos?` · <b>${myPos}-o‘rin</b>`:""}.`:`У вас на этой неделе <b>${mine.p}</b> баллов${myPos?` · <b>${myPos}-е место</b>`:""}.`}</div>`;
     return; }
   const rows=Object.entries(RK.list).filter(([id,x])=>Date.now()-x.t<180*864e5).sort((a,b)=>b[1].n-a[1].n||a[1].t-b[1].t);
   if(!rows.length){ l.innerHTML=`<li class="rk-empty">${RK.net==="ok"?(uz?"Hali hech kim yo‘q. Birinchi bo‘ling! 🚀":"Пока никого нет. Будьте первым! 🚀"):(uz?"Yuklanmoqda…":"Загрузка…")}</li>`; return; }
   let pos=0, prev=-1, myPos=0;
   l.innerHTML=rows.map(([id,x],k)=>{ if(x.n!==prev){ pos=k+1; prev=x.n; } if(id===me) myPos=pos; const lv=PROG_LV[progLv(x.n)];
-    return `<li class="${id===me?"me":""}"><span class="rk-pos${pos<=3?" m":""}">${pos===1?"🥇":pos===2?"🥈":pos===3?"🥉":pos}</span><span class="rk-nm"><b>${esc(x.nm)}${id===me?(uz?" (siz)":" (вы)"):""}${hpBadge(id===me?hpPts():x.hp,true)}${x.app?`<i class="rk-app" title="${uz?"ilovadan":"из приложения"}">📲</i>`:""}</b><span>${lv.e} ${esc(lv.de)}</span></span><span class="rk-n"><b>${x.n}</b><span>${uz?"so‘z":"слов"}</span></span>${tchOk()?`<button type="button" class="rk-del" data-rkdel="${esc(id)}" title="O‘chirish">🗑</button>`:""}</li>`; }).join("");
+    return `<li class="${id===me?"me":""}" data-rkid="${esc(id)}"><span class="rk-pos${pos<=3?" m":""}">${pos===1?"🥇":pos===2?"🥈":pos===3?"🥉":pos}</span><span class="rk-nm"><b>${esc(x.nm)}${id===me?(uz?" (siz)":" (вы)"):""}${hpBadge(id===me?hpPts():x.hp,true,{nm:x.nm,hb:id===me?hpCnt():x.hb})}${x.app?`<i class="rk-app" title="${uz?"ilovadan":"из приложения"}">📲</i>`:""}</b><span>${lv.e} ${esc(lv.de)}</span></span><span class="rk-n"><b>${x.n}</b><span>${uz?"so‘z":"слов"}</span></span>${tchOk()?`<button type="button" class="rk-del" data-rkdel="${esc(id)}" title="O‘chirish">🗑</button>`:""}</li>`; }).join("");
   const m=document.getElementById("rk-me");
   if(m) m.innerHTML= !ACC.cur? `<div class="rk-me">${uz?"Reytingga kirish uchun ro‘yxatdan o‘ting (👤 ism + parol).":"Чтобы попасть в рейтинг, зарегистрируйтесь (👤 имя + пароль)."}</div>`
     : myPos? `<div class="rk-me">${uz?`Siz <b>${myPos}-o‘rindasiz</b> (${rows.length} kishidan).`:`Вы на <b>${myPos}-м месте</b> из ${rows.length}.`}${myPos>1?" "+(uz?`Oldingizdagigacha <b>${Math.max(1,rows[myPos-2][1].n-(RK.list[me]||{n:0}).n+1)}</b> ta so‘z.`:`До следующего места — <b>${Math.max(1,rows[myPos-2][1].n-(RK.list[me]||{n:0}).n+1)}</b> слов.`):" 👑"}</div>` : "";
@@ -5078,9 +5397,9 @@ const NEWS=[
 ];
 function newsSeen(){ try{ return +(localStorage.getItem("news:v")||0); }catch(e){ return 0; } }
 function newsList(){ const seen=newsSeen(); const L=NEWS.filter(x=>x.v>seen); return L.length?L:NEWS; }
-function newsPillT(){ const b=document.getElementById("news-pill"); if(!b) return; const uz=state.lang!=="ru"; let old=false, fresh=Date.now()-NEWS_T<7*86400e3; try{ old=!!localStorage.getItem("tour")||!!localStorage.getItem("lern:last")||!!localStorage.getItem("chname"); }catch(e){}
+function newsPillT(){ const b=document.getElementById("news-pill"); if(!b) return; b.hidden=true; return; /* «Yangilanish» oynasi olib tashlandi (2026-10-23, Otabek) */ const uz=state.lang!=="ru"; let old=false, fresh=Date.now()-NEWS_T<7*86400e3; try{ old=!!localStorage.getItem("tour")||!!localStorage.getItem("lern:last")||!!localStorage.getItem("chname"); }catch(e){}
   b.hidden=!(old&&fresh&&!IN_ARTIFACT); b.textContent=uz?"🆕 Yangilanish":"🆕 Что нового"; }
-function newsAuto(){ let old=false; try{ old=!!localStorage.getItem("tour")||!!localStorage.getItem("lern:last")||!!localStorage.getItem("chname"); }catch(e){} if(!old||newsSeen()>=NEWS_V||IN_ARTIFACT||(typeof TOUR!=="undefined"&&TOUR.on)) return; if(location.search&&/[?&](du|ch|lt|kg|dc)=/.test(location.search)) return; setTimeout(newsOpen,900); }
+function newsAuto(){ return; /* avtomatik «Yangilanish» oynasi o'chirildi (2026-10-23, Otabek) */ let old=false; try{ old=!!localStorage.getItem("tour")||!!localStorage.getItem("lern:last")||!!localStorage.getItem("chname"); }catch(e){} if(!old||newsSeen()>=NEWS_V||IN_ARTIFACT||(typeof TOUR!=="undefined"&&TOUR.on)) return; if(location.search&&/[?&](du|ch|lt|kg|dc)=/.test(location.search)) return; setTimeout(newsOpen,900); }
 function newsOpen(){ const uz=state.lang!=="ru", L=newsList(); let o=document.getElementById("news"); if(!o){ o=document.createElement("div"); o.id="news"; o.className="news"; o.setAttribute("role","dialog"); o.setAttribute("aria-modal","true"); document.body.appendChild(o); }
   o.hidden=false; document.body.style.overflow="hidden"; o.dataset.k="0";
   const draw=()=>{ const k=+o.dataset.k, s=L[k], last=k===L.length-1;
@@ -5096,7 +5415,7 @@ document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closes
   if(!o) return; const k=+o.dataset.k, n=newsList().length; if(a==="next"&&k<n-1) o.dataset.k=String(k+1); if(a==="prev"&&k>0) o.dataset.k=String(k-1); o.draw(); });
 (function(){ let x0=null; document.addEventListener("pointerdown",e=>{ if(e.target.closest&&e.target.closest("#news .news-shot")) x0=e.clientX; }); document.addEventListener("pointerup",e=>{ if(x0==null) return; const d=e.clientX-x0; x0=null; const o=document.getElementById("news"); if(!o||o.hidden) return; const k=+o.dataset.k, n=newsList().length; if(d<-40&&k<n-1){ o.dataset.k=String(k+1); o.draw(); } else if(d>40&&k>0){ o.dataset.k=String(k-1); o.draw(); } }); })();
 document.addEventListener("click",e=>{ if(e.target.closest("[data-lang]")) setTimeout(newsPillT,0); }); setTimeout(newsPillT,0); setTimeout(newsAuto,0);
-function tourLinkT(){ const b=document.getElementById("tour-link"); if(!b) return; let d=false; try{ d=localStorage.getItem("tour")==="1"; }catch(e){} b.hidden=d; b.textContent=state.lang==="ru"?"🧭 Экскурсия по сайту":"🧭 Sayt bo‘ylab sayohat"; } /* bir marta o‘tilgandan keyin tugma yashiriladi (2026-10-21, Otabek) */
+function tourLinkT(){ const b=document.getElementById("tour-link"); if(!b) return; let d=false; try{ d=localStorage.getItem("tour")==="1"; }catch(e){} b.hidden=d; const ru=state.lang==="ru"; b.innerHTML=`${ru?"🧭 Экскурсия по сайту":"🧭 Sayt bo‘ylab sayohat"}<span class="tour-lx" data-tourx role="button" aria-label="${ru?"Скрыть":"Yashirish"}" title="${ru?"Скрыть":"Yashirish"}">✕</span>`; } /* ✕ — sayohat tugmasini yashirish (2026-10-23, Otabek) */ /* bir marta o‘tilgandan keyin tugma yashiriladi (2026-10-21, Otabek) */
 document.addEventListener("click",e=>{ if(e.target.closest("[data-lang]")) setTimeout(tourLinkT,0); }); setTimeout(tourLinkT,0);
 function tourBox(){ let b=document.getElementById("tour"); if(!b){ b=document.createElement("div"); b.id="tour"; b.innerHTML=`<div class="tour-spot" id="tour-spot"></div><div class="tour-bub" id="tour-bub" role="dialog" aria-live="polite"></div>`; document.body.appendChild(b); } return b; }
 function tourFind(s){ try{ const e=typeof s==="function"?s():document.querySelector(s); return e&&e.getClientRects().length?e:null; }catch(e){ return null; } }
@@ -5138,7 +5457,7 @@ function tourDraw(s,el){ const spot=document.getElementById("tour-spot"), bub=do
   const el=s&&!s.center?tourFind(s.sel):null, fr=s&&s.free?document.querySelector(s.free):null;
   if((s&&s.tap&&el&&el.contains(e.target))||(fr&&fr.contains(e.target))){ if(tp==="click"&&s.tap&&!s._dyn&&!TOUR.adv){ TOUR.adv=true; setTimeout(tourNext,450); } return; }
   e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); },true));
-document.addEventListener("click",e=>{ if(e.target.closest("[data-tourgo]")){ document.querySelectorAll(".snd").forEach(x=>{ if(x.id==="acc") x.hidden=true; }); document.body.style.overflow=""; tourStart(); } });
+document.addEventListener("click",e=>{ if(e.target.closest("[data-tourx]")){ e.stopPropagation(); try{ localStorage.setItem("tour","1"); }catch(er){} tourLinkT(); try{ actEv("tour","hide"); }catch(er){} return; } if(e.target.closest("[data-tourgo]")){ document.querySelectorAll(".snd").forEach(x=>{ if(x.id==="acc") x.hidden=true; }); document.body.style.overflow=""; tourStart(); } });
 
 function regSave(){ if(typeof ACC!=="undefined"&&ACC.cur||IN_ARTIFACT||tchOk()) return ""; const ru=state.lang==="ru";
   return `<div class="lrn-card reg-cta reg-save"><div class="reg-h">💾 ${ru?"Сохраните свой результат!":"Natijangizni saqlab qo‘ying!"}</div>
@@ -5361,11 +5680,11 @@ function presAct(){
   return "🏠 Bosh sahifa"+(TABS[state.tab]?" · "+TABS[state.tab].lbl:"");
 }
 function presPub(){ if(!ON.mq) return; let c=null; try{ c=progCount().n; }catch(e){}
-  ON.mq.pub(ON_NS+ON.pid, JSON.stringify({n:ACC.name?rkName():"Mehmon",r:!!ACC.cur,w:ON.w,c,t:Date.now()}), true); ON.t=Date.now(); }
+  ON.mq.pub(ON_NS+ON.pid, JSON.stringify({n:ACC.name?rkName():"Mehmon",r:!!ACC.cur,w:ON.w,c,t:Date.now(),p:(typeof CM!=="undefined"&&CM.pid)||"",lv:(TABS[state.tab]||{}).lbl||"",hl:(typeof hpMyLv==="function"?hpMyLv():0)}), true); ON.t=Date.now(); }
 function presTick(){ if(!ON.mq) return; const w=presAct(); if(w!==ON.w||Date.now()-ON.t>110000){ ON.w=w; presPub(); } }
 function presStart(){ if(IN_ARTIFACT||tchOk()||ON.mq) return;
   try{ ON.pid=localStorage.getItem("onpid"); if(!ON.pid){ ON.pid=Math.random().toString(36).slice(2,10); localStorage.setItem("onpid",ON.pid); } }catch(e){ ON.pid=Math.random().toString(36).slice(2,10); }
-  ON.w=presAct(); ON.mq=mqMulti(()=>presPub(),null,()=>({will:{topic:ON_NS+ON.pid,payload:"",qos:1,retain:true}}));
+  ON.w=presAct(); try{ if(typeof cmPid==="function"&&ACC.cur) cmPid().then(()=>{ if(ON.mq) presPub(); }); }catch(e){} ON.mq=mqMulti(()=>presPub(),null,()=>({will:{topic:ON_NS+ON.pid,payload:"",qos:1,retain:true}}));
   setInterval(presTick,3000);
   addEventListener("pagehide",()=>{ try{ ON.mq.pub(ON_NS+ON.pid,"",true); }catch(e){} }); }
 setTimeout(()=>{ try{ presStart(); }catch(e){} },3500);
@@ -5443,7 +5762,9 @@ function stCollect(){ const pre="u:"+ACC.cur+":", sent={}, best={}, D=lernData()
   const c=progCount(); let a=null; try{ a=actSummary(); }catch(e){}
   let yl={}, ml={}; try{ const P=stLessons(); for(const k in P.yl) if(P.yl[k][0]) yl[k]=P.yl[k][0]; for(const k in P.ml) if(P.ml[k][0]) ml[k]=P.ml[k][0]; }catch(e){} /* faqat 0 dan katta — jami sonni ustoz o'z lernData'sidan oladi (stTotals) */
   let l=[]; try{ const o=actGet(); l=(o&&o.l||[]).slice(-20); }catch(e){}
-  return {nm:ACC.name, ak:ACC.cur, w:c.n, k:c.k, g, y, a, yl, ml, l, hp:hpPts(), t:Date.now()}; }
+  /* 📅 kunlik challenge tarixi — 45 kun: [kun, daraja, to'g'ri, ball] (2026-10-23, Otabek: «kunlik challengelarni tahlilga qo'y») */
+  let dc=[]; try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i), m=k&&/^dc:([A-Z][0-9]):(\d{4}-\d\d-\d\d)$/.exec(k); if(!m) continue; if(Date.now()-new Date(m[2]).getTime()>45*864e5) continue; const v=JSON.parse(localStorage.getItem(k)||"null"); if(v) dc.push([m[2],m[1],v.ok|0,v.s|0]); } dc.sort((a,b)=>a[0]<b[0]?-1:1); dc=dc.slice(-60); }catch(e){}
+  return {nm:ACC.name, ak:ACC.cur, w:c.n, k:c.k, g, y, a, yl, ml, l, dc, hp:hpPts(), hb:hpCnt()||undefined, mr:mrCalc()||undefined, t:Date.now()}; }
 /* Lektion bo'yicha: yl["A1:3"]=[o'rganildi, jami] (so'zlar), ml["A1:3"]=[o'zlashtirildi, jami] (Muloqot iboralari); bir xil Lektion uchun ru/uz ro'yxatlardan eng yaxshisi */
 function stLessons(){ const D=lernData(), yl={}, ml={};
   Object.keys(D).forEach(id=>{ const d=D[id]; if(d.parts||d.kind==="perfekt"||d.alias) return; const lv=id.split("-")[0]; if(!/^(A1|A2|B1)$/.test(lv)) return;
@@ -5471,6 +5792,173 @@ function stSync(force){ if(!ACC.cur||IN_ARTIFACT||tchOk()||!(window.crypto&&cryp
       c.on("error",()=>{}); setTimeout(()=>{ try{ c.end(true); }catch(e){} },15000); }catch(e){} }); });
   }catch(e){} }, force?0:1500); }
 setTimeout(()=>{ try{ stSync(); }catch(e){} },5000);
+
+/* ===== 👥 Jamoa: onlayn · chaqiruv (📬) · guruh · o'rtoqlar (2026-10-23, Otabek: «community gefühl») =====
+   pid  — ommaviy id (maxfiy kalitdan hosil, 16 hex): s/ hujjatida, presence'da, ib/ (xabarlar qutisi) va g/ (guruh) da ishlatiladi.
+   ib/<pid> — chaqiruvlar/xabarlar ro'yxati (Firestore) + jonli MQTT "streber/ib/v1/<pid>".
+   g/<gid>  — guruh: nomi, a'zolar [[pid,ism]...], egasi. u:<acc>:grp = gid (bulutga avtomatik sinxron).
+   u:<acc>:fr — o'rtoqlar {pid:[ism,t]}. */
+const CM={pid:"",on:{},onMq:null,ib:[],seen:null,g:null,gid:"",fr:null,tab:"on",sub:"all",ibMq:null,ibT:0,q:"",rkT:0,busy:false};
+const IB_NS="streber/ib/v1/";
+function cmOn(){ return !IN_ARTIFACT&&!window.BLITZ&&!tchOk(); }
+async function cmPid(){ if(!ACC.cur) return ""; if(CM.pid) return CM.pid; CM.pid=(await cloudSha("streber.uz/pub/v1:"+ACC.cur)).slice(0,16); return CM.pid; }
+function cmGid(){ if(!ACC.cur) return ""; return String(store.get("grp")||"").slice(0,12); }
+function cmNw(n){ if(!ACC.cur) return 0; let b=null; try{ b=JSON.parse(store.get("nwb")||"null"); }catch(e){} const w=gpWeek(); if(!b||b.w!==w){ b={w,b:n|0}; try{ localStorage.setItem(accK("nwb"),JSON.stringify(b)); }catch(e){} } return Math.max(0,(n|0)-(b.b|0)); }
+function cmFr(){ if(CM.fr) return CM.fr; try{ CM.fr=JSON.parse(store.get("fr")||"{}")||{}; }catch(e){ CM.fr={}; } return CM.fr; }
+function cmFrSave(){ store.set("fr",JSON.stringify(CM.fr||{})); }
+function cmSeen(){ if(CM.seen) return CM.seen; try{ CM.seen=JSON.parse(store.get("ibseen")||"[]")||[]; }catch(e){ CM.seen=[]; } return CM.seen; }
+function cmSeenAdd(id){ const s=cmSeen(); if(!s.includes(id)){ s.push(id); CM.seen=s.slice(-300); try{ localStorage.setItem(accK("ibseen"),JSON.stringify(CM.seen)); }catch(e){} } }
+const CM_T={team:["Jamoa: guruh · o‘rtoqlar · onlayn","Команда: группа · друзья · онлайн"],
+  bar:["kishi hozir o‘qiyapti","человек сейчас учится"], bar1:["kishi hozir o‘qiyapti","человек сейчас учится"], none:["Hozir hech kim yo‘q — birinchi bo‘ling 🚀","Сейчас никого — будьте первым 🚀"],
+  on:["🟢 Onlayn","🟢 Онлайн"], ib:["📬 Xabar","📬 Почта"], g:["🏫 Guruh","🏫 Группа"], fr:["🤝 Do‘stlar","🤝 Друзья"],
+  all:["Hammasi","Все"], grp:["Guruh","Группа"], frs:["Do‘stlar","Друзья"],
+  you:["(siz)","(вы)"], guest:["Mehmon","Гость"], online:["onlayn","онлайн"], today:["bugun","сегодня"], words:["so‘z","слов"], wk:["bu hafta","на этой неделе"],
+  duel:["⚔️ Duel","⚔️ Дуэль"], ch:["⚡ Challenge","⚡ Challenge"], hi:["👋 Salom","👋 Привет"], fr1:["➕ Do‘st","➕ В друзья"], g1:["👥 Guruhga taklif","👥 В группу"], frOk:["✓ Do‘st","✓ Друг"], gOk:["✓ Guruhda","✓ В группе"],
+  needAcc:["Buning uchun ro‘yxatdan o‘ting (👤).","Для этого зарегистрируйтесь (👤)."], sent:["Yuborildi ✓","Отправлено ✓"], limit:["Bugun shu odamga yetarli yubordingiz.","На сегодня этому человеку достаточно."],
+  inbox0:["Hozircha xabar yo‘q.","Пока нет сообщений."], accept:["Qabul","Принять"], later:["Keyin","Позже"], play:["O‘ynash","Играть"], reply:["👋 Javob","👋 Ответить"], del:["✕","✕"],
+  kDu:["seni Duelga chaqirdi","зовёт тебя на дуэль"], kCh:["senga Challenge yubordi","отправил(а) тебе Challenge"], kHi:["salom aytdi 👋","передаёт привет 👋"], kFr:["seni o‘rtoq qilmoqchi","хочет добавить тебя в друзья"], kFrOk:["o‘rtoqlikni qabul qildi ✓","принял(а) дружбу ✓"], kG:["seni guruhga taklif qildi:","приглашает тебя в группу:"], kN:["seni kutyapti 👋 — bugun 10 ta so‘z?","ждёт тебя 👋 — 10 слов сегодня?"], kGok:["guruhga qo‘shildi ✓","вступил(а) в группу ✓"],
+  gNone:["Hali guruh yo‘q. Birga o‘qiydiganlaringizni qo‘shing — ular ham sizni, siz ham ularni ko‘rasiz.","Группы пока нет. Добавьте тех, с кем учитесь — вы будете видеть друг друга."],
+  gAdd:["➕ Odam qo‘shish","➕ Добавить человека"], gGoal:["Bu hafta","На этой неделе"], gCh:["⚡ Guruhga Challenge","⚡ Challenge группе"], gOut:["Chiqish","Выйти"], gRen:["✏️ Nom","✏️ Название"], gInvAll:["Hammasini taklif qilish","Пригласить всех"],
+  search:["Ism yozing…","Введите имя…"], sugg:["Tavsiya — hozir onlayn","Рекомендуем — сейчас онлайн"], invite:["Taklif","Пригласить"], invited:["✓ Yuborildi","✓ Отправлено"], member:["a’zo","участник"], members:["kishi","чел."],
+  nudge:["👋 Turt","👋 Толкнуть"], last:["oxirgi:","был(а):"], never:["hali o‘qimagan","ещё не учился"], frNone:["Hali do‘st yo‘q. Reytingda yoki onlayn ro‘yxatda ism ustiga bosing → ➕ Do‘st.","Друзей пока нет. Нажмите на имя в рейтинге или в списке онлайн → ➕ В друзья."],
+  frAdd:["➕ Do‘st qo‘shish","➕ Добавить друга"], joined:["Guruhga qo‘shildingiz ✓","Вы вступили в группу ✓"], gLeft:["Guruhdan chiqdingiz.","Вы вышли из группы."], gNew:["guruhi","группа"],
+  chSent:["Challenge hammaga yuborildi ✓","Challenge отправлен всем ✓"], copy:["📋 Nusxalash","📋 Копировать"], gTip:["Guruh a’zolari o‘z natijasini keyingi kirishda yuboradi — ro‘yxat asta to‘ladi.","Участники отправят результаты при следующем входе — список заполнится."]
+};
+function cmT(k){ const x=CM_T[k]; return x?x[state.lang==="ru"?1:0]:k; }
+function cmAgo(t){ if(!t) return cmT("never"); const m=Math.round((Date.now()-t)/60000), ru=state.lang==="ru"; if(m<3) return ru?"сейчас":"hozir"; if(m<60) return m+(ru?" мин":" daq"); if(m<1440) return Math.round(m/60)+(ru?" ч":" soat"); const d=Math.round(m/1440); return d+(ru?" дн.":" kun"); }
+/* RK (s/ hujjatlari) → pid bo'yicha indeks */
+function cmRkByPid(pid){ if(!pid) return null; for(const id in RK.list){ const x=RK.list[id]; if(x.pid===pid) return Object.assign({id},x); } return null; }
+function cmRkLoad(){ if(Date.now()-CM.rkT<60000) return Promise.resolve(); CM.rkT=Date.now(); return rankCloud().catch(()=>{}); }
+function cmOnline(){ const now=Date.now(); return Object.entries(CM.on).filter(([id,d])=>d&&id!==ON.pid&&now-(d.t||0)<180000); }
+function cmIsOnline(pid){ return cmOnline().some(([id,d])=>d.p&&d.p===pid); }
+/* ---- presence: hamma onlaynlarni ko'rish ---- */
+function cmPresStart(){ if(!cmOn()||CM.onMq) return;
+  CM.onMq=mqMulti(cl=>cl.subscribe(ON_NS+"+",{qos:1}),(t,m)=>{ const id=t.split("/").pop(); if(!m){ delete CM.on[id]; } else { try{ const d=JSON.parse(m); d.t=d.t||Date.now(); CM.on[id]=d; }catch(e){} } cmBarDraw(); if(CM.tab==="on"&&cmEl().hidden===false) cmDrawSoon(); });
+  setInterval(cmBarDraw,30000); }
+function cmBarDraw(){ let b=document.getElementById("on-bar"); const host=document.getElementById("app-inst"); if(!host) return;
+  if(!b){ b=document.createElement("button"); b.type="button"; b.id="on-bar"; b.className="on-bar"; b.hidden=true; host.insertAdjacentElement("afterend",b); }
+  const L=cmOnline(); if(!L.length){ b.hidden=true; return; } const names=L.slice(0,3).map(([id,d])=>d.n||cmT("guest")), rest=L.length-names.length;
+  b.innerHTML=`<i class="on-dot"></i><b>${L.length}</b> ${esc(cmT("bar"))}<span>· ${esc(names.join(", "))}${rest>0?` +${rest}`:""}</span>`; b.hidden=false; }
+/* ---- panel ---- */
+function cmEl(){ let o=document.getElementById("cm"); if(!o){ o=document.createElement("div"); o.id="cm"; o.className="lrn cm"; o.hidden=true; document.body.appendChild(o); } return o; }
+function cmOpen(tab,sub){ if(!cmOn()) return; CM.tab=tab||CM.tab||"on"; if(sub) CM.sub=sub; cmRkLoad().then(cmDrawSoon); if(ACC.cur){ cmIbPoll(); cmGroupLoad().then(cmDrawSoon); } cmRender(); cmEl().hidden=false; document.body.style.overflow="hidden"; }
+function cmClose(){ cmEl().hidden=true; document.body.style.overflow=""; }
+let cmDT=null; function cmDrawSoon(){ clearTimeout(cmDT); cmDT=setTimeout(()=>{ if(!cmEl().hidden) cmRender(); },120); }
+function cmHead(){ const n=cmUnread(); return `<div class="lrn-bar"><button class="btn" data-cm="close" aria-label="✕">✕</button><div class="lrn-tt"><b>👥 ${state.lang==="ru"?"Вместе":"Birga"}</b><small>${esc(ACC.name||cmT("guest"))}</small></div></div>
+  <div class="cm-tabs">${[["on",cmT("on")],["ib",cmT("ib")+(n?` <i>${n}</i>`:"")],["g",cmT("g")],["fr",cmT("fr")]].map(([k,l])=>`<button type="button" data-cmtab="${k}" aria-pressed="${CM.tab===k}">${l}</button>`).join("")}</div>`; }
+function cmRender(){ const o=cmEl(); o.innerHTML=cmHead()+`<div class="lrn-body cm-body">${CM.tab==="on"?cmOnHTML():CM.tab==="ib"?cmIbHTML():CM.tab==="g"?cmGHTML():cmFrHTML()}</div>`; }
+function cmRow(p){ /* p: {pid,nm,n,hp,on,lv,w,sub,right} */
+  return `<li class="cm-row" data-cmp="${esc(p.pid||"")}" data-cmn="${esc(p.nm||"")}"><span class="cm-dot${p.on?"":" off"}"></span><span class="cm-nm"><b>${esc(p.nm||"?")}${p.me?" "+cmT("you"):""}${p.hp?hpBadge(p.hp,true,{nm:p.nm,hb:p.hb}):""}</b><small>${esc(p.sub||"")}</small></span><span class="cm-r">${p.right||""}</span></li>`; }
+function cmOnHTML(){ const L=cmOnline(), ru=state.lang==="ru"; const tabs=`<div class="cm-sub">${[["all",cmT("all")+` ${L.length}`],["g",cmT("grp")],["fr",cmT("frs")]].map(([k,l])=>`<button type="button" data-cmsub="${k}" aria-pressed="${CM.sub===k}">${l}</button>`).join("")}</div>`;
+  if(CM.sub==="g") return tabs+cmMembersHTML("g"); if(CM.sub==="fr") return tabs+cmMembersHTML("fr");
+  if(!L.length) return tabs+`<p class="tp-empty">${esc(cmT("none"))}</p>`;
+  const rows=L.sort((a,b)=>(b[1].r?1:0)-(a[1].r?1:0)||(b[1].t||0)-(a[1].t||0)).map(([id,d])=>{ const rk=cmRkByPid(d.p); return cmRow({pid:d.p||"",nm:d.n||cmT("guest"),hp:rk?rk.hp:0,hb:rk?rk.hb:"",on:true,sub:(d.w||"")+(d.lv?" · "+d.lv:""),right:d.p&&ACC.cur&&d.p!==CM.pid?`<button type="button" class="btn cm-sm" data-cmact="du" data-cmp="${esc(d.p)}" data-cmn="${esc(d.n||"")}">⚔️</button>`:""}); }).join("");
+  return tabs+`<ul class="cm-l">${rows}</ul><p class="ch-net">${ru?"Видно только имя, уровень и занятие.":"Faqat ism, daraja va nima qilayotgani ko‘rinadi."}</p>`; }
+function cmMembersHTML(kind){ const ru=state.lang==="ru"; let M=[]; if(kind==="g"){ if(!CM.g) return `<p class="tp-empty">${esc(cmT("gNone"))}</p><div class="ch-btns"><button type="button" class="btn primary" data-cmtab="g">${esc(cmT("gAdd"))}</button></div>`; M=(CM.g.m||[]).map(x=>({pid:x[0],nm:x[1]})); }
+  else { const F=cmFr(); M=Object.entries(F).map(([pid,v])=>({pid,nm:v[0]})); if(!M.length) return `<p class="tp-empty">${esc(cmT("frNone"))}</p>`; }
+  M=M.map(p=>{ const rk=cmRkByPid(p.pid)||{}; return Object.assign(p,{n:rk.n|0,nw:rk.nw|0,hp:rk.hp|0,hb:rk.hb||"",gp:rk.gw===gpWeek()?rk.gp|0:0,t:rk.t||0,on:cmIsOnline(p.pid),me:p.pid===CM.pid,app:rk.app}); }).sort((a,b)=>b.nw-a.nw||b.n-a.n);
+  return `<ol class="cm-l cm-rank">${M.map((p,i)=>cmRow({pid:p.pid,nm:p.nm,me:p.me,hp:p.hp,hb:p.hb,on:p.on,sub:`${p.on?"🟢 "+cmT("online"):cmT("last")+" "+cmAgo(p.t)} · ${p.n} ${cmT("words")}${p.gp?` · 🎮 ${p.gp}`:""}`,right:`<b>${p.nw}</b><small>${esc(cmT("wk"))}</small>${!p.me&&!p.on&&ACC.cur?`<button type="button" class="btn cm-sm" data-cmact="nudge" data-cmp="${esc(p.pid)}" data-cmn="${esc(p.nm)}">${esc(cmT("nudge"))}</button>`:""}`})).join("")}</ol>`; }
+/* ---- 📬 xabarlar ---- */
+function cmUnread(){ const s=cmSeen(); return CM.ib.filter(m=>!s.includes(m.i)).length; }
+/* 👥 doimiy kirish tugmasi — onlayn hech kim bo'lmasa ham guruh/o'rtoqlar/xabarlar ochiladi (2026-10-23) */
+function cmBtn(){ const c=document.getElementById("acc-chip"); if(!c) return; let b=document.getElementById("cm-btn"); if(!cmOn()||!ACC.cur){ if(b) b.remove(); return; } if(!b){ b=document.createElement("button"); b.type="button"; b.id="cm-btn"; b.className="thm-btn cm-btn"; b.title=cmT("team"); b.textContent="👥"; c.insertAdjacentElement("afterend",b); } }
+function cmBadge(){ try{ cmBtn(); }catch(e){} const c=document.getElementById("acc-chip"); if(!c) return; let b=document.getElementById("ib-badge"); const n=cmUnread(); if(!n){ if(b) b.remove(); return; } if(!b){ b=document.createElement("button"); b.type="button"; b.id="ib-badge"; b.className="ib-badge"; b.title=cmT("ib"); c.insertAdjacentElement("afterend",b); } b.textContent="📬 "+n; }
+function cmIbText(m){ const n=m.f&&m.f.n||"?"; const k=m.k; return `<b>${esc(n)}</b> ${esc(k==="du"?cmT("kDu"):k==="ch"?cmT("kCh"):k==="hi"?cmT("kHi"):k==="fr"?cmT("kFr"):k==="fr_ok"?cmT("kFrOk"):k==="g"?cmT("kG")+" "+(m.d&&m.d.gnm||""):k==="g_ok"?cmT("kGok"):k==="nudge"?cmT("kN"):"")}${m.d&&m.d.txt?`<i>«${esc(String(m.d.txt).slice(0,80))}»</i>`:""}`; }
+function cmIbBtns(m){ const k=m.k; if(k==="du"||k==="ch") return `<button type="button" class="btn primary cm-sm" data-cmib="go" data-i="${esc(m.i)}">${esc(cmT("play"))}</button>`; if(k==="fr") return `<button type="button" class="btn primary cm-sm" data-cmib="frok" data-i="${esc(m.i)}">${esc(cmT("accept"))}</button>`; if(k==="g") return `<button type="button" class="btn primary cm-sm" data-cmib="gok" data-i="${esc(m.i)}">${esc(cmT("accept"))}</button>`; if(k==="hi"||k==="nudge") return `<button type="button" class="btn cm-sm" data-cmib="hi" data-i="${esc(m.i)}">${esc(cmT("reply"))}</button>`; return ""; }
+function cmIbHTML(){ if(!ACC.cur) return `<p class="tp-empty">${esc(cmT("needAcc"))}</p>`; const s=cmSeen(); const L=CM.ib.slice().sort((a,b)=>(b.t||0)-(a.t||0)); L.forEach(m=>cmSeenAdd(m.i)); setTimeout(cmBadge,0);
+  if(!L.length) return `<p class="tp-empty">${esc(cmT("inbox0"))}</p>`;
+  return `<ul class="cm-l cm-ib">${L.map(m=>`<li class="${s.includes(m.i)?"":"new"}"><span class="cm-nm">${cmIbText(m)}<small>${cmAgo(m.t)}</small></span><span class="cm-r">${cmIbBtns(m)}<button type="button" class="lrn-link cm-x" data-cmib="del" data-i="${esc(m.i)}">✕</button></span></li>`).join("")}</ul>`; }
+async function cmIbPoll(){ try{ if(!ACC.cur||!CLOUD_ON||!cmOn()) return; const pid=await cmPid(); if(!pid) return; const f=await fsGet("ib/"+pid); let L=[]; try{ L=f&&f.l?JSON.parse(f.l.stringValue||"[]"):[]; }catch(e){} let del=[]; try{ del=JSON.parse(store.get("ibdel")||"[]")||[]; }catch(e){}
+    const had=new Set(CM.ib.map(m=>m.i)); L.filter(m=>m&&m.i&&!del.includes(m.i)).forEach(m=>{ if(!had.has(m.i)) CM.ib.push(m); }); CM.ib=CM.ib.slice(-60); cmBadge(); cmAuto(); if(CM.tab==="ib"&&!cmEl().hidden) cmDrawSoon(); }catch(e){} }
+function cmAuto(){ /* fr_ok / g_ok avtomatik qo'llanadi */ CM.ib.forEach(m=>{ if(m.k==="fr_ok"&&m.f&&m.f.p){ const F=cmFr(); if(!F[m.f.p]){ F[m.f.p]=[m.f.n||"?",Date.now()]; cmFrSave(); } cmSeenAdd(m.i); } }); }
+async function cmIbListen(){ try{ if(!ACC.cur||!cmOn()||CM.ibMq) return; const pid=await cmPid(); if(!pid) return; CM.ibMq=mqMulti(cl=>cl.subscribe(IB_NS+pid,{qos:1}),(t,m)=>{ try{ const o=JSON.parse(m); if(!o||!o.i||CM.ib.some(x=>x.i===o.i)) return; CM.ib.push(o); cmAuto(); cmBadge(); cmToast(o); if(CM.tab==="ib"&&!cmEl().hidden) cmDrawSoon(); }catch(e){} }); }catch(e){} }
+function cmToast(m){ if(!m||m.k==="fr_ok"||m.k==="g_ok") { if(m&&m.k==="fr_ok") hpToastMsg("✓ "+(m.f&&m.f.n||"")+" "+cmT("kFrOk")); return; } let t=document.getElementById("cm-toast"); if(!t){ t=document.createElement("div"); t.id="cm-toast"; t.className="cm-toast"; document.body.appendChild(t); }
+  t.innerHTML=`<span>${cmIbText(m)}</span><span class="cm-tb">${cmIbBtns(m)}<button type="button" class="btn cm-sm" data-cmib="later" data-i="${esc(m.i)}">${esc(cmT("later"))}</button></span>`; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),15000); }
+function hpToastMsg(txt){ let t=document.getElementById("hp-toast"); if(!t){ t=document.createElement("div"); t.id="hp-toast"; t.className="hp-toast"; document.body.appendChild(t); } t.innerHTML=esc(txt); t.classList.remove("show"); void t.offsetWidth; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),4000); }
+/* yuborish: Firestore ib/<pid> + MQTT */
+function cmLimitOk(pid,k){ const day=actDay(); let o={}; try{ o=JSON.parse(store.get("iblim")||"{}")||{}; }catch(e){} if(o.d!==day) o={d:day}; const key=pid+":"+(k==="nudge"?"n":"i"), max=k==="nudge"?1:5; if((o[key]|0)>=max) return false; o[key]=(o[key]|0)+1; try{ localStorage.setItem(accK("iblim"),JSON.stringify(o)); }catch(e){} return true; }
+async function cmSend(toPid,k,d){ if(!ACC.cur||!toPid) return false; if(!(k==="fr_ok"||k==="g_ok")&&!cmLimitOk(toPid,k)){ hpToastMsg(cmT("limit")); return false; }
+  const me=await cmPid(); const m={i:Math.random().toString(36).slice(2,10),t:Date.now(),k,f:{p:me,n:rkName()},d:d||{}};
+  try{ if(!CM.ibMq) await cmIbListen(); if(CM.ibMq) CM.ibMq.pub(IB_NS+toPid,JSON.stringify(m),false); }catch(e){}
+  try{ const f=await fsGet("ib/"+toPid); let L=[]; try{ L=f&&f.l?JSON.parse(f.l.stringValue||"[]"):[]; }catch(e){} L.push(m); L=L.slice(-30); await fsPut("ib/"+toPid,{l:fsS(JSON.stringify(L)),t:fsI(Date.now())}); }catch(e){}
+  try{ actEv("cm",k); }catch(e){} return true; }
+function cmGameCode(kind){ const T0=TABS[state.tab]||TABS.a11, lv=T0.lvl, l=lrnAllId(lv,state.lang); if(!l) return null; const les=[]; for(let i=T0.lo;i<=T0.hi;i++) les.push(i);
+  const c=kind==="du"?{v:1,l,s:les,r:Math.floor(Math.random()*2147483647),c:(ACC.name||"").split(" ")[0]||"",t:Date.now()}:{v:2,l,s:les,r:Math.floor(Math.random()*2147483647),c:(ACC.name||"").split(" ")[0]||"",t:Date.now()};
+  const code=chB64e(JSON.stringify(c)); return {code,url:kind==="du"?(location.origin+location.pathname+"?du="+code):chLink(code),lbl:T0.lbl}; }
+/* ---- shaxs kartasi ---- */
+function cmCard(pid,nm){ const ru=state.lang==="ru", rk=cmRkByPid(pid)||{}, on=cmIsOnline(pid), F=cmFr(), inG=!!(CM.g&&(CM.g.m||[]).some(x=>x[0]===pid)), me=pid===CM.pid;
+  const lv=PROG_LV[progLv(rk.n|0)]; const stat=`${on?"🟢 "+cmT("online"):cmT("last")+" "+cmAgo(rk.t)} · ${lv?lv.e+" "+lv.de+" · ":""}${rk.n|0} ${cmT("words")} · ${cmT("wk")}: ${rk.nw|0}${rk.app?" · 📲":""}`;
+  const btns=!ACC.cur?`<p class="mu">${esc(cmT("needAcc"))}</p>`:me?"":`<div class="ch-btns cm-acts"><button type="button" class="btn primary" data-cmact="du" data-cmp="${esc(pid)}" data-cmn="${esc(nm)}">${cmT("duel")}</button><button type="button" class="btn" data-cmact="ch" data-cmp="${esc(pid)}" data-cmn="${esc(nm)}">${cmT("ch")}</button><button type="button" class="btn" data-cmact="hi" data-cmp="${esc(pid)}" data-cmn="${esc(nm)}">${cmT("hi")}</button>${F[pid]?`<span class="btn cm-ok">${cmT("frOk")}</span>`:`<button type="button" class="btn" data-cmact="fr" data-cmp="${esc(pid)}" data-cmn="${esc(nm)}">${cmT("fr1")}</button>`}${inG?`<span class="btn cm-ok">${cmT("gOk")}</span>`:`<button type="button" class="btn" data-cmact="g" data-cmp="${esc(pid)}" data-cmn="${esc(nm)}">${cmT("g1")}</button>`}</div>`;
+  hpSheet(`<h4>${esc(nm||rk.nm||"?")}${rk.hp?hpBadge(rk.hp,false,{nm,hb:rk.hb}):""}</h4><p class="mu">${esc(stat)}</p>${btns}<div class="ch-btns"><button type="button" class="btn" data-hpx="1">${ru?"Закрыть":"Yopish"}</button></div>`); }
+function cmCardRk(x,me){ const ru=state.lang==="ru", lv=PROG_LV[progLv(x.n|0)], on=false;
+  const stat=`${cmT("last")} ${cmAgo(x.t)} · ${lv?lv.e+" "+lv.de+" · ":""}${x.n|0} ${cmT("words")}${x.gw===gpWeek()&&x.gp?` · 🎮 ${x.gp} ${ru?"баллов за неделю":"ball bu hafta"}`:""}${x.app?" · 📲":""}`;
+  const note=me?(ru?"Это вы.":"Bu sizsiz."):(ru?"Вызвать на дуэль и добавить в друзья можно, когда этот ученик снова зайдёт на сайт (после обновления).":"Duelga chaqirish, o‘rtoq/guruhga qo‘shish — bu o‘quvchi saytga yana kirganda (yangilangandan keyin) ochiladi.");
+  hpSheet(`<h4>${esc(x.nm||"?")}${x.hp?hpBadge(x.hp,false,{nm:x.nm,hb:x.hb}):""}</h4><p class="mu">${esc(stat)}</p><p class="mu" style="font-size:13px">${esc(note)}</p><div class="ch-btns"><button type="button" class="btn" data-hpx="1">${ru?"Закрыть":"Yopish"}</button></div>`); }
+async function cmAct(k,pid,nm,btn){ if(!ACC.cur){ hpToastMsg(cmT("needAcc")); return; } if(btn){ btn.disabled=true; }
+  let ok=false; try{
+  if(k==="du"||k==="ch"){ const g=cmGameCode(k); if(g){ ok=await cmSend(pid,k,{url:g.url,lbl:g.lbl}); if(ok&&k==="du"){ hpToastMsg(cmT("sent")); location.href=g.url; return; } } }
+  else if(k==="hi"){ ok=await cmSend(pid,"hi",{}); }
+  else if(k==="nudge"){ ok=await cmSend(pid,"nudge",{}); }
+  else if(k==="fr"){ ok=await cmSend(pid,"fr",{}); }
+  else if(k==="g"){ if(!CM.g){ await cmGroupCreate(); } if(CM.g) ok=await cmSend(pid,"g",{gid:CM.gid,gnm:CM.g.nm}); }
+  }catch(e){ ok=false; } if(btn){ btn.disabled=false; if(ok) btn.textContent=cmT("invited"); } if(ok) hpToastMsg(cmT("sent")); else hpToastMsg("⚠️ "+(state.lang==="ru"?"Не получилось — проверьте интернет":"Bo‘lmadi — internetni tekshiring")); }
+/* ---- guruh ---- */
+async function cmGroupLoad(){ try{ const gid=cmGid(); if(!gid){ CM.g=null; CM.gid=""; return; } if(CM.g&&CM.gid===gid&&Date.now()-(CM.g._t||0)<60000) return; const f=await fsGet("g/"+gid); if(!f){ CM.g=null; return; } let m=[]; try{ m=JSON.parse((f.m||{}).stringValue||"[]"); }catch(e){} CM.g={nm:(f.nm||{}).stringValue||"",m,o:(f.o||{}).stringValue||"",_t:Date.now()}; CM.gid=gid; }catch(e){} }
+async function cmGroupSave(){ if(!CM.g||!CM.gid) return; await fsPut("g/"+CM.gid,{nm:fsS(String(CM.g.nm).slice(0,40)),m:fsS(JSON.stringify(CM.g.m).slice(0,4000)),o:fsS(CM.g.o||""),t:fsI(Date.now())}); CM.g._t=Date.now(); }
+async function cmGroupCreate(nm){ const me=await cmPid(); if(!me) return; const gid=Array.from(crypto.getRandomValues(new Uint8Array(6))).map(b=>b.toString(16).padStart(2,"0")).join(""); CM.gid=gid; CM.g={nm:nm||(rkName().split(" ")[0]+" "+cmT("gNew")),m:[[me,rkName()]],o:me,_t:0}; await cmGroupSave(); store.set("grp",gid); try{ cloudDirty(); }catch(e){} }
+async function cmGroupJoin(gid,gnm){ const me=await cmPid(); if(!me||!gid) return; const f=await fsGet("g/"+gid); if(!f){ hpToastMsg("—"); return; } let m=[]; try{ m=JSON.parse((f.m||{}).stringValue||"[]"); }catch(e){} if(!m.some(x=>x[0]===me)) m.push([me,rkName()]); CM.gid=gid; CM.g={nm:(f.nm||{}).stringValue||gnm||"",m,o:(f.o||{}).stringValue||"",_t:0}; await cmGroupSave(); store.set("grp",gid); try{ cloudDirty(); }catch(e){} hpToastMsg(cmT("joined")); if(CM.g.o&&CM.g.o!==me) cmSend(CM.g.o,"g_ok",{}); }
+async function cmGroupLeave(){ const me=await cmPid(); if(!CM.g) return; CM.g.m=(CM.g.m||[]).filter(x=>x[0]!==me); await cmGroupSave().catch(()=>{}); CM.g=null; CM.gid=""; store.set("grp",""); try{ cloudDirty(); }catch(e){} hpToastMsg(cmT("gLeft")); }
+function cmGHTML(){ const ru=state.lang==="ru"; if(!ACC.cur) return `<p class="tp-empty">${esc(cmT("needAcc"))}</p>`;
+  const add=`<div class="lrn-card cm-add" id="cm-add"><h3>${esc(cmT("gAdd"))}</h3><input class="ch-in" id="cm-q" placeholder="${esc(cmT("search"))}" value="${esc(CM.q)}" autocomplete="off"><div id="cm-res">${cmSearchHTML()}</div></div>`;
+  if(!CM.g) return `<div class="lrn-card"><h3>${esc(cmT("g"))}</h3><p>${esc(cmT("gNone"))}</p></div>${add}`;
+  const M=(CM.g.m||[]).map(x=>{ const rk=cmRkByPid(x[0])||{}; return {pid:x[0],nm:x[1],n:rk.n|0,nw:rk.nw|0,hp:rk.hp|0,hb:rk.hb||"",gp:rk.gw===gpWeek()?rk.gp|0:0,t:rk.t||0,on:cmIsOnline(x[0]),me:x[0]===CM.pid}; }).sort((a,b)=>b.nw-a.nw||b.n-a.n);
+  const sum=M.reduce((a,p)=>a+p.nw,0), goal=250*Math.max(1,M.length), pct=Math.min(100,Math.round(sum/goal*100)), own=CM.g.o===CM.pid;
+  return `<div class="lrn-card"><h3>👥 ${esc(CM.g.nm)} <small>· ${M.length} ${esc(cmT("members"))}</small>${own?` <button type="button" class="lrn-link" data-cmg="ren">${esc(cmT("gRen"))}</button>`:""}</h3>
+    <div class="cm-goal"><span>🎯 ${esc(cmT("gGoal"))}: <b>${sum} / ${goal}</b> ${esc(cmT("words"))}</span><span>${pct}%</span></div><div class="hp-prog"><i style="width:${Math.max(2,pct)}%"></i></div>
+    <ol class="cm-l cm-rank">${M.map(p=>cmRow({pid:p.pid,nm:p.nm,me:p.me,hp:p.hp,hb:p.hb,on:p.on,sub:`${p.on?"🟢 "+cmT("online"):cmT("last")+" "+cmAgo(p.t)} · ${p.n} ${cmT("words")}${p.gp?` · 🎮 ${p.gp}`:""}`,right:`<b>${p.nw}</b><small>${esc(cmT("wk"))}</small>${!p.me&&!p.on?`<button type="button" class="btn cm-sm" data-cmact="nudge" data-cmp="${esc(p.pid)}" data-cmn="${esc(p.nm)}">${esc(cmT("nudge"))}</button>`:""}`})).join("")}</ol>
+    <p class="ch-net">${esc(cmT("gTip"))}</p>
+    <div class="ch-btns"><button type="button" class="btn primary" data-cmg="ch">${esc(cmT("gCh"))}</button><button type="button" class="btn" data-cmg="out">${esc(cmT("gOut"))}</button></div></div>${add}`; }
+function cmSearchHTML(){ const q=(CM.q||"").trim().toLowerCase(); const inG=p=>!!(CM.g&&(CM.g.m||[]).some(x=>x[0]===p)); const row=(pid,nm,sub)=>`<li class="cm-row"><span class="cm-dot${cmIsOnline(pid)?"":" off"}"></span><span class="cm-nm"><b>${esc(nm)}</b><small>${esc(sub)}</small></span><span class="cm-r">${inG(pid)?`<span class="cm-ok">${cmT("gOk")}</span>`:`<button type="button" class="btn cm-sm" data-cmact="g" data-cmp="${esc(pid)}" data-cmn="${esc(nm)}">${esc(cmT("invite"))}</button>`}</span></li>`;
+  let h="";
+  if(q.length>=2){ const R=Object.values(RK.list).filter(x=>x.pid&&x.pid!==CM.pid&&String(x.nm||"").toLowerCase().includes(q)).slice(0,12); h+=`<ul class="cm-l">${R.map(x=>row(x.pid,x.nm,`${PROG_LV[progLv(x.n|0)].e} · ${x.n|0} ${cmT("words")}`)).join("")||`<li class="tp-empty">—</li>`}</ul>`; }
+  const On=cmOnline().filter(([id,d])=>d.p&&d.p!==CM.pid&&!inG(d.p)); if(On.length){ h+=`<p class="lbl cm-lbl">${esc(cmT("sugg"))}</p><ul class="cm-l">${On.slice(0,10).map(([id,d])=>row(d.p,d.n||"?",(d.w||"")+(d.lv?" · "+d.lv:""))).join("")}</ul>${On.length>1?`<div class="ch-btns"><button type="button" class="btn" data-cmg="invall">${esc(cmT("gInvAll"))} (${On.length})</button></div>`:""}`; }
+  return h; }
+/* ---- o'rtoqlar ---- */
+function cmFrHTML(){ if(!ACC.cur) return `<p class="tp-empty">${esc(cmT("needAcc"))}</p>`; const F=cmFr(); const body=Object.keys(F).length?cmMembersHTML("fr"):`<p class="tp-empty">${esc(cmT("frNone"))}</p>`;
+  return `<div class="lrn-card"><h3>${esc(cmT("fr"))} <small>· ${Object.keys(F).length}</small></h3>${body}</div><div class="lrn-card cm-add"><h3>${esc(cmT("frAdd"))}</h3><input class="ch-in" id="cm-q" placeholder="${esc(cmT("search"))}" value="${esc(CM.q)}" autocomplete="off" data-cmfr="1"><div id="cm-res">${cmFrSearchHTML()}</div></div>`; }
+function cmFrSearchHTML(){ const q=(CM.q||"").trim().toLowerCase(), F=cmFr(); if(q.length<2) return ""; const R=Object.values(RK.list).filter(x=>x.pid&&x.pid!==CM.pid&&String(x.nm||"").toLowerCase().includes(q)).slice(0,12);
+  return `<ul class="cm-l">${R.map(x=>`<li class="cm-row"><span class="cm-dot${cmIsOnline(x.pid)?"":" off"}"></span><span class="cm-nm"><b>${esc(x.nm)}</b><small>${x.n|0} ${cmT("words")}</small></span><span class="cm-r">${F[x.pid]?`<span class="cm-ok">${cmT("frOk")}</span>`:`<button type="button" class="btn cm-sm" data-cmact="fr" data-cmp="${esc(x.pid)}" data-cmn="${esc(x.nm)}">${esc(cmT("fr1"))}</button>`}</span></li>`).join("")||`<li class="tp-empty">—</li>`}</ul>`; }
+/* ---- hodisalar ---- */
+document.addEventListener("click",async e=>{
+  if(e.target.closest("#on-bar")){ cmOpen("on","all"); return; }
+  if(e.target.closest("#ib-badge")){ cmOpen("ib"); return; }
+  if(e.target.closest("#cm-btn")){ cmOpen(cmGid()?"g":"on","all"); return; }
+  const o=cmEl(); const inCm=!!e.target.closest("#cm");
+  if(inCm&&e.target.closest('[data-cm="close"]')){ cmClose(); return; }
+  const tb=e.target.closest("[data-cmtab]"); if(tb){ CM.tab=tb.dataset.cmtab; CM.q=""; cmRender(); return; }
+  const sb=e.target.closest("[data-cmsub]"); if(sb){ CM.sub=sb.dataset.cmsub; cmRender(); return; }
+  const ac=e.target.closest("[data-cmact]"); if(ac){ e.stopPropagation(); cmAct(ac.dataset.cmact,ac.dataset.cmp,ac.dataset.cmn,ac); return; }
+  const ib=e.target.closest("[data-cmib]"); if(ib){ const m=CM.ib.find(x=>x.i===ib.dataset.i); const t=document.getElementById("cm-toast"); if(t) t.classList.remove("show"); if(!m) return; cmSeenAdd(m.i); cmBadge(); const k=ib.dataset.cmib;
+    if(k==="go"&&m.d&&m.d.url){ location.href=m.d.url; return; }
+    if(k==="frok"){ const F=cmFr(); F[m.f.p]=[m.f.n||"?",Date.now()]; cmFrSave(); await cmSend(m.f.p,"fr_ok",{}); hpToastMsg(cmT("frOk")); cmDrawSoon(); return; }
+    if(k==="gok"){ await cmGroupJoin(m.d&&m.d.gid,m.d&&m.d.gnm); CM.tab="g"; cmDrawSoon(); return; }
+    if(k==="hi"){ await cmSend(m.f.p,"hi",{}); hpToastMsg(cmT("sent")); return; }
+    if(k==="del"){ CM.ib=CM.ib.filter(x=>x.i!==m.i); let del=[]; try{ del=JSON.parse(store.get("ibdel")||"[]")||[]; }catch(er){} del.push(m.i); try{ localStorage.setItem(accK("ibdel"),JSON.stringify(del.slice(-100))); }catch(er){} cmDrawSoon(); return; }
+    return; }
+  const gb=e.target.closest("[data-cmg]"); if(gb){ const k=gb.dataset.cmg;
+    if(k==="ren"){ const v=prompt(cmT("gRen"),CM.g.nm); if(v&&v.trim()){ CM.g.nm=v.trim().slice(0,40); await cmGroupSave(); cmRender(); } return; }
+    if(k==="out"){ if(confirm(cmT("gOut")+"?")){ await cmGroupLeave(); cmRender(); } return; }
+    if(k==="ch"){ const g=cmGameCode("ch"); if(!g) return; gb.disabled=true; const me=CM.pid; for(const x of (CM.g.m||[])){ if(x[0]!==me) await cmSend(x[0],"ch",{url:g.url,lbl:g.lbl}); } gb.disabled=false; hpToastMsg(cmT("chSent")); try{ await navigator.clipboard.writeText(g.url); }catch(er){} return; }
+    if(k==="invall"){ gb.disabled=true; if(!CM.g) await cmGroupCreate(); for(const [id,d] of cmOnline()){ if(d.p&&d.p!==CM.pid) await cmSend(d.p,"g",{gid:CM.gid,gnm:CM.g.nm}); } gb.textContent=cmT("invited"); return; }
+    return; }
+  /* ism ustiga bosish → karta (onlayn ro'yxat, guruh, o'rtoqlar, reyting) */
+  const row=e.target.closest(".cm-row[data-cmp]"); if(row&&row.dataset.cmp&&!e.target.closest("button")){ cmCard(row.dataset.cmp,row.dataset.cmn); return; }
+  /* reytingda butun qator bosiladi; pid hali yo'q bo'lsa ham karta ochiladi (2026-10-23, Otabek: «reytingda bosilmayapti») */
+  const li=e.target.closest("#rk-list li[data-rkid]"); if(li&&!e.target.closest(".hp-b,button")&&!IN_ARTIFACT&&!window.BLITZ){ /* ustoz rejimida ham ochiladi */ const id=li.dataset.rkid, x=id?RK.list[id]:null; if(!x) return; if(id===rkId()){ cmCardRk(x,true); return; } if(x.pid) cmCard(x.pid,x.nm); else cmCardRk(x,false); return; }
+});
+document.addEventListener("input",e=>{ if(e.target.id!=="cm-q") return; CM.q=e.target.value; const r=document.getElementById("cm-res"); if(r) r.innerHTML=e.target.dataset.cmfr?cmFrSearchHTML():cmSearchHTML(); });
+/* boshlash */
+setTimeout(()=>{ try{ if(!cmOn()) return; cmPresStart(); if(ACC.cur){ cmPid().then(()=>{ cmIbListen(); cmIbPoll(); cmGroupLoad(); setInterval(cmIbPoll,300000); }); } }catch(e){} },6000);
 
 /* ===== ☁️ Bulut saqlash — Firestore (2026-10-19, Otabek) =====
    O'quvchi natijalari telefonda ham, internetdagi bazada ham saqlanadi: boshqa telefondan kirsa — natijasi qaytadi.
@@ -5503,14 +5991,14 @@ function cloudUser(){ const U=accUsers(); return ACC.cur&&U[ACC.cur]||null; }
 function cloudG(k){ try{ return localStorage.getItem("cloud:"+k+":"+ACC.cur); }catch(e){ return null; } }
 function cloudS(k,v){ try{ localStorage.setItem("cloud:"+k+":"+ACC.cur,String(v)); }catch(e){} }
 let CLOUD_T=null, CLOUD_BUSY=false;
-function cloudDirty(){ if(!CLOUD_ON||!ACC.cur) return; clearTimeout(CLOUD_T); CLOUD_T=setTimeout(()=>cloudPush(),45000); } /* 12s→45s (2026-10-21): 1400+ o'quvchida bazaga yozish ~3 barobar kam; ilova yopilganda baribir darhol saqlanadi */
+function cloudDirty(){ if(!CLOUD_ON||!ACC.cur) return; clearTimeout(CLOUD_T); CLOUD_T=setTimeout(()=>cloudPush(),120000); } /* 45s→120s (2026-10-23, marafon oqimi: bazaga yozish yana ~2.5 barobar kam) · 12s→45s (2026-10-21): 1400+ o'quvchida bazaga yozish ~3 barobar kam; ilova yopilganda baribir darhol saqlanadi */
 async function cloudPush(ka){ const u=cloudUser(); if(!CLOUD_ON||!u||!u.c||CLOUD_BUSY||tchOk()) return; CLOUD_BUSY=true;
   try{ const d=JSON.stringify(cloudDump(ACC.cur)), h=await cloudSha(d);
     if(h!==cloudG("h")){ const t=Date.now(); await fsPut("p/"+u.c,{d:fsS(d),t:fsI(t)},ka&&d.length<60000); cloudS("h",h); cloudS("t",t); }
     if(!cloudG("n")){ await fsPut("n/"+await cloudNameId(ACC.cur),{t:fsI(Date.now())}).catch(()=>{}); cloudS("n",1); }
-    const sm=stCollect(); sm.ak=ACC.cur; sm.c=u.c; /* c — tiklash kaliti, faqat ustoz ocha oladi */ const gp=gpGet(), sh=await cloudSha(JSON.stringify([sm.nm,sm.w,sm.k,sm.g,sm.y,sm.c,gp.p,gp.pp,sm.hp]));
-    const ah=sm.a?JSON.stringify((sm.a.dd||[]).slice(-1)):""; if(sh!==cloudG("sh")||cloudG("rkv")!=="2"||Date.now()-(+cloudG("st")||0)>864e5||(ah!==cloudG("ah")&&Date.now()-(+cloudG("st")||0)>180000)){ cloudS("ah",ah); cloudS("rkv","2"); /* ochiq reyting maydonlari ham shu hujjatda: ism qisqa, so'z soni, daraja, 📲 — reyting MQTT'ga emas, bazaga tayanadi (2026-10-22, Otabek: «Azizbek reytingda yo'q») */
-      await fsPut("s/"+await cloudSumId(u.c),{e:fsS(await stEnc(sm)),t:fsI(Date.now()),rk:fsS(rkId()||""),nm:fsS(rkName()),n:fsI(sm.w|0),lv:fsS(progLv(sm.w|0)),app:fsI(sm.a&&sm.a.app?1:0),gw:fsS(gpWeek()),gp:fsI((gp.p|0)+(hpLv(sm.hp)>=4?50:0)),pw:fsS(gp.pw||""),pp:fsI(gp.pp|0),hp:fsI(sm.hp|0)}); try{ hpRefPush(); }catch(e){} cloudS("sh",sh); cloudS("st",Date.now()); }
+    const sm=stCollect(); sm.ak=ACC.cur; sm.c=u.c; /* c — tiklash kaliti, faqat ustoz ocha oladi */ const gp=gpGet(), sh=await cloudSha(JSON.stringify([sm.nm,sm.w,sm.k,sm.g,sm.y,sm.c,gp.p,gp.pp,sm.hp,sm.mr]));
+    const ah=sm.a?JSON.stringify((sm.a.dd||[]).slice(-1)):""; if(sh!==cloudG("sh")||cloudG("rkv")!=="4"||Date.now()-(+cloudG("st")||0)>864e5||(ah!==cloudG("ah")&&Date.now()-(+cloudG("st")||0)>180000)){ cloudS("ah",ah); cloudS("rkv","4"); /* ochiq reyting maydonlari ham shu hujjatda: ism qisqa, so'z soni, daraja, 📲 — reyting MQTT'ga emas, bazaga tayanadi (2026-10-22, Otabek: «Azizbek reytingda yo'q») */
+      await fsPut("s/"+await cloudSumId(u.c),{e:fsS(await stEnc(sm)),t:fsI(Date.now()),rk:fsS(rkId()||""),nm:fsS(rkName()),n:fsI(sm.w|0),lv:fsS(progLv(sm.w|0)),app:fsI(sm.a&&sm.a.app?1:0),gw:fsS(gpWeek()),gp:fsI((gp.p|0)+(hpLv(sm.hp)>=4?50:0)),pw:fsS(gp.pw||""),pp:fsI(gp.pp|0),hp:fsI(sm.hp|0),hb:fsS(JSON.stringify(sm.hb||{}).slice(0,200)),pid:fsS(await cmPid()),g:fsS(cmGid()),nw:fsI(cmNw(sm.w|0)),mr:fsS(JSON.stringify(sm.mr||{}).slice(0,400)),rc:fsS(await hpRefCode())}); try{ hpRefPush(); }catch(e){} cloudS("sh",sh); cloudS("st",Date.now()); }
   }catch(e){} CLOUD_BUSY=false; }
 async function cloudPull(){ const u=cloudUser(); if(!CLOUD_ON||!u||!u.c) return;
   try{ const f=await fsGet("p/"+u.c);
@@ -5549,18 +6037,19 @@ if(CLOUD_ON){
   document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden"){ clearTimeout(CLOUD_T); cloudPush(true); } });
 }
 /* ustoz paneli: bazadagi natijalarni o'qish */
-async function tpCloudLoad(){ if(!CLOUD_ON) return; try{ let tok="", n=0;
+async function tpCloudLoad(){ if(!CLOUD_ON) return; TP.cloudT=0; tpAgoDraw(); try{ let tok="", n=0;
   do{ const r=await fetch(FS_BASE+"s?pageSize=300"+(tok?"&pageToken="+encodeURIComponent(tok):""),{cache:"no-store"}); if(!r.ok) break; const j=await r.json();
     for(const doc of (j.documents||[])){ const id=doc.name.split("/").pop(), e=doc.fields&&doc.fields.e&&doc.fields.e.stringValue; if(!e||e.startsWith("FB1:")||TP.stRaw["c:"+id]===e) continue; TP.stRaw["c:"+id]=e;
       try{ const d=await stDec(e); if(d&&d.nm){ const kk=d.ak||("c:"+id), o=TP.stu[kk]; if(!o||(d.t||0)>=(o.t||0)){ if(!d.a&&o&&o.a) d.a=o.a; TP.stu[kk]=d; } else if(o&&!o.a&&d.a) o.a=d.a; } }catch(err){ TP.stLocked=true; } }
     tok=j.nextPageToken||""; }while(tok&&++n<30);
-  tpStDrawSoon(); }catch(e){} }
+  TP.cloudT=Date.now(); tpAgoDraw(); tpStDrawSoon(); }catch(e){ TP.cloudT=TP.cloudT||Date.now(); tpAgoDraw(); } }
 /* ustoz tomoni: 👥 O'quvchilar */
 function tpStStart(){ if(TP.mqSt) return; TP.stu={}; TP.stRaw={};
   TP.mqSt=mqMulti(cl=>cl.subscribe(ST_NS+"+",{qos:1}),(t,m)=>{ const id=t.split("/").pop();
     if(!m){ delete TP.stRaw[id]; return; } if(TP.stRaw[id]===m) return; TP.stRaw[id]=m;
     stDec(m).then(d=>{ if(d&&d.nm){ const kk=d.ak||id, o=TP.stu[kk]; d._mq=id; if(!o||(d.t||0)>=(o.t||0)){ if(!d.a&&o&&o.a) d.a=o.a; TP.stu[kk]=d; } else if(o&&!o.a&&d.a) o.a=d.a; tpStDrawSoon(); } }).catch(()=>{ TP.stLocked=true; tpStDrawSoon(); }); });
-  tpCloudLoad(); clearInterval(TP.cloudIv); TP.cloudIv=setInterval(tpCloudLoad,60000); }
+  tpCloudLoad(); clearInterval(TP.cloudIv); TP.cloudIv=setInterval(tpAgoDraw,30000); }
+function tpAgoDraw(){ const e=document.getElementById("tp-stago"); if(e) e.textContent=TP.cloudT?"yangilandi: "+spAgo(TP.cloudT,true):"yuklanmoqda…"; }
 /* ===== 📊 O'quvchi profili — ustoz panelida ham, o'quvchining o'zida ham bir xil (2026-10-22, Otabek: «har bir o'quvchi aynan nima qilyapti… o'quvchining o'ziga ham ko'rinsin») ===== */
 function spAgo(t,uz){ if(!t) return "—"; const m=Math.round((Date.now()-t)/60000); if(m<1) return uz?"hozir":"сейчас"; if(m<60) return m+(uz?" daq oldin":" мин назад"); if(m<1440) return Math.round(m/60)+(uz?" soat oldin":" ч назад"); const d=Math.round(m/1440); return d===1?(uz?"kecha":"вчера"):d+(uz?" kun oldin":" дн назад"); }
 function spWhen(t,uz){ const d=new Date(t), now=new Date(), hm=d.toTimeString().slice(0,5), dd=Math.round((new Date(now.getFullYear(),now.getMonth(),now.getDate())-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5); return (dd===0?(uz?"bugun":"сегодня"):dd===1?(uz?"kecha":"вчера"):dd+(uz?" kun oldin":" дн назад"))+(dd<2?" "+hm:""); }
@@ -5583,7 +6072,7 @@ function spProfHTML(d,o){ o=o||{}; const uz=state.lang!=="ru", T=stTotals(), A=d
     <div class="sp-kp"><div><b>${d.w|0}</b><small>${uz?"so‘z":"слов"}</small></div><div><b>${g.length}</b><small>${uz?"varaq":"листов"}${pc!=null?` · ${pc}%`:""}</small></div><div><b>${muN}</b><small>${uz?"ibora":"фраз"}</small></div><div><b>${spN||(an?an.min:0)}</b><small>${spN?(uz?"gapirdi":"сказал"):(uz?"daq / 7 kun":"мин / 7 дн")}</small></div></div>
     ${fl.length?`<div class="sp-fl">${fl.slice(0,4).join("")}</div>`:""}
     <h5>⏱ ${uz?"Oxirgi ishlar":"Последние работы"}<small>${an?`7 ${uz?"kun":"дн"} · ${an.min} ${uz?"daq":"мин"}`:""}</small></h5>
-    <div class="sp-log">${L.length?L.slice(0,8).map(x=>`<div><time>${spWhen(x[0],uz)}</time><b>${esc(x[3]||x[2])}</b><i>${x[5]?`${x[4]} / ${x[5]}`:x[4]?`+${x[4]} ${uz?"so‘z":"слов"}`:""}</i></div>`).join(""):`<div><i>${uz?"hali yo‘q — yangi versiyadan boshlab yoziladi":"пока нет"}</i></div>`}</div>
+    <div class="sp-log">${L.length?L.slice(0,8).map(x=>`<div><time>${spWhen(x[0],uz)}</time><b>${esc(x[3]||x[2])}</b><i>${x[5]?`${x[4]} / ${x[5]}`:x[1]==="du"&&x[4]?`${x[4]} ${uz?"ball":"баллов"}`:x[4]?`+${x[4]} ${uz?"so‘z":"слов"}`:""}</i></div>`).join(""):`<div><i>${uz?"hali yo‘q — yangi versiyadan boshlab yoziladi":"пока нет"}</i></div>`}</div>
     <h5>🧠 Wortschatz — ${uz?"Lektion bo‘yicha":"по урокам"}<span class="sp-seg">${["A1","A2","B1"].map(l=>`<button type="button" data-sp="lv" data-v="${l}" aria-pressed="${showLv===l}">${l}</button>`).join("")}<button type="button" data-sp="half" data-v="1" aria-pressed="${half===1}">L1–12</button><button type="button" data-sp="half" data-v="2" aria-pressed="${half===2}">L13–24</button></span></h5>
     <div class="sp-grid">${vis.map(cell).join("")}</div>
     ${gRows?`<h5>✍️ ${uz?"Varaqlar va mashqlar":"Листы и упражнения"}<small>${uz?"eng yaxshi natija":"лучший результат"}</small></h5>${gRows}`:""}
@@ -5601,7 +6090,8 @@ function myProfClose(){ const el=document.getElementById("myp"); if(el) el.hidde
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-myp]"); if(b){ if(b.dataset.myp==="close") myProfClose(); else myProfOpen(); } });
 function tpStDrawSoon(){ clearTimeout(TP.stD); TP.stD=setTimeout(()=>{ if(TP.tab==="an"){ const el=document.getElementById("tp-body"); const y=el?el.scrollTop:0; tpAn(); if(el) el.scrollTop=y; } else tpStDraw(); },TP.tab==="an"?1500:200); }
 function stPct(g){ const w=g.filter(x=>x[3]>0); return w.length? Math.round(w.reduce((s,x)=>s+x[2]/x[3],0)/w.length*100) : null; }
-function tpSt(){ document.getElementById("tp-body").innerHTML=`<div class="lrn-card"><div class="tp-lbh"><h3>👥 O‘quvchilar natijalari</h3><span class="ch-net">ro‘yxatdan o‘tganlar · o‘zi yangilanadi</span></div>
+document.addEventListener("click",e=>{ if(e.target.closest("[data-tpref]")){ tpCloudLoad(); try{ rankCloud(true); }catch(er){} } });
+function tpSt(){ document.getElementById("tp-body").innerHTML=`<div class="lrn-card"><div class="tp-lbh"><h3>👥 O‘quvchilar natijalari</h3><span class="ch-net"><span id="tp-stago">${TP.cloudT?"yangilandi: "+spAgo(TP.cloudT,true):""}</span> <button type="button" class="btn tp-ref" data-tpref="1">🔄 Yangilash</button></span></div>
     <div id="tp-stlock"></div>
     <div class="tp-strow"><input class="ch-in" id="tp-stq" placeholder="🔍 Ism bo‘yicha qidirish" value="${esc(TP.stQ||"")}"><div class="tp-seg">${[["w","So‘zlar"],["g","Grammatika"],["n","Ism"]].map(([k,t])=>`<button type="button" data-tpsort="${k}" aria-pressed="${(TP.stS||"w")===k}">${t}</button>`).join("")}</div></div>
     <div class="tp-fchips" id="tp-fch"></div>
@@ -5620,7 +6110,7 @@ function tpStDraw(){ const b=document.getElementById("tp-stn"); if(b) b.textCont
   const uz=state.lang!=="ru";
   ul.innerHTML=L.map(([id,d])=>{ const lv=PROG_LV[progLv(d.w|0)], open=TP.stOpen===id;
     return `<li class="${open?"open":""}"><button type="button" class="tp-sth" data-tpst="${esc(id)}"><span class="tp-av">${lv.e}</span>
-      <span class="tp-nm"><b>${esc(String(d.nm).slice(0,40))}${hpBadge(d.hp|0,true)}</b><span>${esc(spLast(d,uz))}</span></span>${spMini(d)}${spLvlChip(d)}</button>
+      <span class="tp-nm"><b>${esc(String(d.nm).slice(0,40))}${hpBadge(d.hp|0,true,{nm:d.nm,hb:d.hb})}</b><span>${esc(spLast(d,uz))}</span></span>${spMini(d)}${spLvlChip(d)}</button>
       ${open?`<div class="tp-std" id="tp-std-${esc(id)}"></div>`:""}</li>`; }).join("");
   if(TP.stOpen&&TP.stu[TP.stOpen]){ const host=document.getElementById("tp-std-"+TP.stOpen); if(host){ host.innerHTML=spProfHTML(TP.stu[TP.stOpen])+(TP.stu[TP.stOpen].ak?`<div class="tp-th"><button type="button" class="btn" data-tpth="rahmat">🙏 Rahmat (+5)</button><button type="button" class="btn" data-tpth="maqtov">👏 Maqtov (+5)</button><button type="button" class="btn" data-tpth="own">✍️ O‘z so‘zim…</button><span class="ch-net" id="tp-thst"></span></div>`:"")+`<button type="button" class="lrn-link tp-stdel" data-tpstdel="${esc(TP.stOpen)}">🗑 Ro‘yxatdan olib tashlash</button>`; spProfBind(host,TP.stu[TP.stOpen]); } } }function tpStCsv(){ const rows=[["Ism","O‘rganilgan so‘zlar","Varaq","Natija","Foiz"]];
   tpStList().forEach(([id,d])=>{ const g=d.g||[]; if(!g.length) rows.push([d.nm,d.w,"","",""]); g.forEach(x=>rows.push([d.nm,d.w,(x[1]?x[1]+" · ":"")+x[0],x[2]+(x[3]?"/"+x[3]:""),x[3]?Math.round(x[2]/x[3]*100)+"%":""])); });
@@ -5647,6 +6137,22 @@ async function anGrowthLoad(){ if(!CLOUD_ON||TP.anGL) return; TP.anGL=1; try{ le
   TP.anReg=T.sort((a,b)=>a-b); let R=0; try{ const r=await fetch(FS_BASE+"ref?pageSize=300&mask.fieldPaths=t",{cache:"no-store"}); if(r.ok){ const j=await r.json(); R=(j.documents||[]).length; } }catch(e){} TP.anRef=R; }catch(e){} TP.anGL=0; if(TP.tab==="an") tpStDrawSoon(); }
 function anSvgBars(vals,labels,color,h){ h=h||70; const mx=Math.max(1,...vals), w=vals.length, bw=100/w; return `<svg class="an-svg" viewBox="0 0 100 ${h+14}" preserveAspectRatio="none">${vals.map((v,i)=>`<rect x="${(i*bw+bw*.15).toFixed(2)}" y="${(h-v/mx*h).toFixed(2)}" width="${(bw*.7).toFixed(2)}" height="${(v/mx*h).toFixed(2)}" rx="1" fill="${color}"><title>${labels[i]}: ${v}</title></rect>`).join("")}${vals.map((v,i)=>v?`<text x="${(i*bw+bw/2).toFixed(2)}" y="${(h-v/mx*h-2).toFixed(1)}" font-size="5" text-anchor="middle" fill="currentColor">${v}</text>`:"").join("")}</svg>`; }
 function anSvgLine(vals,color,h){ h=h||60; const mx=Math.max(1,...vals), n=vals.length; const pts=vals.map((v,i)=>`${(i/(n-1||1)*100).toFixed(2)},${(h-v/mx*h+2).toFixed(2)}`); return `<svg class="an-svg" viewBox="0 0 100 ${h+4}" preserveAspectRatio="none"><polyline points="${pts.join(" ")}" fill="none" stroke="${color}" stroke-width="1.6" vector-effect="non-scaling-stroke"/><polygon points="0,${h+2} ${pts.join(" ")} 100,${h+2}" fill="${color}" opacity=".12"/></svg>`; }
+/* 📅 Kunlik challenge tahlili: o'quvchi summary'sidagi dc (45 kun) yoki eski yozuvlardagi l (dc) */
+function anDcRows(all){ const R=[]; all.forEach(([id,d])=>{ const seen=new Set(); (d.dc||[]).forEach(x=>{ R.push({nm:d.nm,day:x[0],lv:x[1],ok:x[2]|0,s:x[3]|0}); seen.add(x[0]+x[1]); });
+    (d.l||[]).forEach(x=>{ if(x[1]!=="dc") return; const day=actDay(x[0]), lv=String(x[2]).split(":")[1]||""; if(seen.has(day+lv)) return; seen.add(day+lv); R.push({nm:d.nm,day,lv,ok:x[4]|0,s:0}); }); }); return R; }
+function anDcPlays(all,from){ return anDcRows(all).filter(r=>r.day>=from).length; }
+function anDcHTML(all,P,days){ const R=anDcRows(all).filter(r=>r.day>=days[0]); const uz=true;
+  if(!R.length) return `<div class="an-c"><h4>📅 Kunlik challenge · ${P} kun</h4><p class="ch-net">Hali ma’lumot yo‘q — o‘quvchilar saytga yangi versiyada kirgandan keyin to‘planadi.</p></div>`;
+  const by=days.map(k=>R.filter(r=>r.day===k).length), ppl=new Set(R.map(r=>r.nm)), avg=Math.round(R.reduce((t,r)=>t+r.ok,0)/R.length*10)/10;
+  const lv={}; R.forEach(r=>lv[r.lv]=(lv[r.lv]||0)+1); const today=actDay(), td=R.filter(r=>r.day===today);
+  const P2={}; R.forEach(r=>{ const o=P2[r.nm]||(P2[r.nm]={n:0,ok:0,days:new Set()}); o.n++; o.ok+=r.ok; o.days.add(r.day); });
+  const top=Object.entries(P2).sort((a,b)=>b[1].days.size-a[1].days.size||b[1].ok-a[1].ok).slice(0,8);
+  const perfect=R.filter(r=>r.ok>=10).length, active=all.length?Math.round(ppl.size/all.length*100):0;
+  return `<div class="an-c"><h4>📅 Kunlik challenge · ${P} kun <small>${R.length} ta o‘yin</small></h4>
+    <div class="an-kpis"><div class="an-k ok"><b>${ppl.size}<small> / ${all.length}</small></b><span>o‘ynaganlar (${active}%)</span></div><div class="an-k"><b>${td.length}</b><span>bugun o‘ynadi</span></div><div class="an-k"><b>${avg}<small> / 10</small></b><span>o‘rtacha natija</span></div><div class="an-k"><b>${perfect}</b><span>🏆 10/10</span></div><div class="an-k"><b>${Object.entries(lv).sort().map(([k,v])=>k+" "+v).join(" · ")||"—"}</b><span>daraja bo‘yicha</span></div></div>
+    <div class="an-two"><div><h5>Har kuni o‘ynaganlar</h5>${anSvgBars(by,days.map(k=>k.slice(5)),"#D97706")}<div class="an-xl"><span>${days[0].slice(5)}</span><span>${days[days.length-1].slice(5)}</span></div></div>
+      <div><h5>🔥 Eng muntazam</h5>${top.map(([nm,o])=>`<div class="an-bar"><span>${esc(nm)}</span><i style="--p:${Math.round(o.days.size/days.length*100)}%"></i><em>${o.days.size} kun · ${Math.round(o.ok/o.n*10)/10}</em></div>`).join("")}</div></div>
+    ${td.length?`<p class="ch-net">Bugun: ${td.map(r=>`${esc(r.nm)} ${r.ok}/10`).join(" · ")}</p>`:""}</div>`; }
 function anGrowthHTML(all,P){ const days=anDays(P), reg=TP.anReg||[], now=Date.now(), d0=now-P*864e5;
   const wk=P>=30, buckets=wk?[...Array(Math.ceil(P/7))].map((_,i)=>now-(Math.ceil(P/7)-i)*7*864e5):days.map(k=>new Date(k).getTime());
   const bl=wk?buckets.map(t=>new Date(t).toLocaleDateString("uz-UZ",{day:"2-digit",month:"2-digit"})):days.map(k=>k.slice(5));
@@ -5658,7 +6164,7 @@ function anGrowthHTML(all,P){ const days=anDays(P), reg=TP.anReg||[], now=Date.n
   const lv={A1:0,A2:0,B1:0}; all.forEach(([,d])=>{ const r=stReach(d); if(r&&lv[r.lv]!=null) lv[r.lv]++; });
   const E={}; all.forEach(([,d])=>Object.entries((d.a||{}).ed||{}).forEach(([k,o])=>{ if(k<days[0]) return; Object.entries(o).forEach(([kk,v])=>E[kk]=(E[kk]||0)+v); })); const e=k=>E[k]|0;
   const app=all.filter(([,d])=>d.a&&d.a.app).length, ask=e("app:ask"), yes=e("app:askyes"), inst=e("app:install");
-  const games=[["🎯 Live test",e("game:lt")],["🎮 Sinf o‘yini",e("game:kg")],["⚡ Challenge",e("game:ch")],["⚔️ Duel",e("game:du")]], gtot=games.reduce((t,x)=>t+x[1],0);
+  const games=[["📅 Kunlik challenge",anDcPlays(all,days[0])],["🎯 Live test",e("game:lt")],["🎮 Sinf o‘yini",e("game:kg")],["⚡ Challenge",e("game:ch")],["⚔️ Duel",e("game:du")]], gtot=games.reduce((t,x)=>t+x[1],0);
   const sh=e("share:lt")+e("share:kg")+e("share:dl"), fb=e("hp:fb"), chc=e("game:chcreate"), hp=all.filter(([,d])=>d.hp>0).length;
   TP.anRep={P,newN,a7,a30,ret,app,gtot,sh,fb,ref:TP.anRef|0,top:all.slice().sort((a,b)=>(b[1].w|0)-(a[1].w|0)).slice(0,3).map(([,d])=>d.nm)};
   return `<div class="an-c an-grow"><h4>📈 Sayt o‘sishi <small>${reg.length?`jami ${reg.length} ro‘yxatdan o‘tgan`:TP.anGL?"yuklanmoqda…":""}</small><button type="button" class="btn" data-tp="anrep" style="float:right">📤 Haftalik hisobot rasmi</button></h4>
@@ -5673,6 +6179,7 @@ function anGrowthHTML(all,P){ const days=anDays(P), reg=TP.anReg||[], now=Date.n
       <div><h5>Jami o‘quvchilar</h5>${anSvgLine(cumv,"#1E8E4E")}<div class="an-xl"><span>${bl[0]}</span><span>${bl[bl.length-1]}</span></div></div></div>
     <div class="an-two"><div><h5>🎮 O‘yinlar · ${P} kun <small>${gtot} ta</small></h5>${games.map(([n,v])=>`<div class="an-bar"><span>${n}</span><i style="--p:${gtot?Math.round(v/gtot*100):0}%"></i><em>${v}</em></div>`).join("")}<div class="an-bar"><span>Challenge yaratildi</span><i style="--p:0%"></i><em>${chc}</em></div></div>
       <div><h5>📣 Tarqalish · ${P} kun</h5><div class="an-bar"><span>📤 natija ulashildi</span><i style="--p:${Math.min(100,sh*5)}%"></i><em>${sh}</em></div><div class="an-bar"><span>👎 xato xabari</span><i style="--p:${Math.min(100,fb*5)}%"></i><em>${fb}</em></div><div class="an-bar"><span>👥 do‘st linki orqali kelgan</span><i style="--p:${Math.min(100,(TP.anRef|0)*5)}%"></i><em>${TP.anRef|0}</em></div><div class="an-bar"><span>🏅 hissa qo‘shganlar</span><i style="--p:${all.length?Math.round(hp/all.length*100):0}%"></i><em>${hp}</em></div></div></div>
+    ${anDcHTML(all,P,days)}
     ${gone.length?`<p class="ch-net">😴 30+ kun kirmaganlar: ${gone.map(esc).join(", ")}${all.length>gone.length+12?" …":""}</p>`:""}
     <p class="ch-net">O‘yin, ulashish va 👎 sonlari yangi versiyadan boshlab yig‘iladi; ro‘yxat sanalari — bazadan.</p></div>`; }
 /* 📲 Sinf uchun A4 plakat: «Ilovani o'rnating» + QR (2026-10-22, Otabek: «ko'proq odam skachat qilishini fördern») */
@@ -5685,7 +6192,7 @@ function tpAppPoster(){ const url=window.BLITZ?"https://blitzdeutsch.uz/":CH_SIT
     <script src="${location.origin}/files/js/qrcode.js" onload="const q=qrcode(0,'M');q.addData('${url}');q.make();document.getElementById('q').innerHTML=q.createSvgTag({cellSize:6,margin:2,scalable:true});setTimeout(()=>print(),600)"><\/script></body></html>`); w.document.close(); }
 function tpAnRep(){ const R=TP.anRep; if(!R) return; const o={kind:"📈 Streber · haftalik hisobot",title:`${R.P} kun · ${new Date().toLocaleDateString("uz-UZ")}`,rows:[["👥 Yangi o‘quvchi","+"+R.newN],["🔥 Faol (7 kun)",String(R.a7)],["📅 Faol (30 kun)",String(R.a30)],["↩️ Qaytganlar",R.ret==null?"—":R.ret+"%"],["📲 Ilova o‘rnatgan",String(R.app)],["🎮 O‘yinlar",String(R.gtot)],["📤 Ulashish",String(R.sh)],["👥 Do‘st orqali",String(R.ref)]],miss:R.top.length?["⭐ Eng faol: "+R.top.join(", ")]:[]};
   gssShare(`📈 Streber · ${R.P} kun\n+${R.newN} yangi · faol ${R.a7} (7 kun) / ${R.a30} (30 kun) · qaytganlar ${R.ret==null?"—":R.ret+"%"}\n📲 ilova ${R.app} · 🎮 o‘yinlar ${R.gtot} · 📤 ulashish ${R.sh} · 👥 do‘st orqali ${R.ref}`,o); }
-function tpAn(){ const body=document.getElementById("tp-body"); if(!body) return; const P=TP.anP||7; if(!TP.anReg) anGrowthLoad();
+function tpAn(){ const body=document.getElementById("tp-body"); if(!body) return; const P=TP.anP||7; if(!TP.anReg) anGrowthLoad(); if(mrOn()&&!TP.mrRef&&!TP.mrL) mrTpLoad();
   if(!TP.mqSt) tpStStart();
   const all=Object.entries(TP.stu||{}).filter(([id,d])=>d&&d.a), days=anDays(P);
   const S=all.map(([id,d])=>[id,d,anStu(d,P)]), act=S.filter(x=>x[2].min>0);
@@ -5709,7 +6216,7 @@ function tpAn(){ const body=document.getElementById("tp-body"); if(!body) return
   const ss=TP.anU||"m"; const ul=S.slice().sort((a,b)=> ss==="n"? String(a[1].nm).localeCompare(String(b[1].nm)) : ss==="l"? String(b[2].last).localeCompare(String(a[2].last)) : ss==="a"? ((a[2].acc??101)-(b[2].acc??101)) : (b[2].min-a[2].min));
   const today=actDay(), flag=x=>{ const f=[]; if(!x.last||x.last<actDay(Date.now()-6*864e5)) f.push("😴 7+ kun kirmagan"); if(x.solp!=null&&x.solp>=25&&x.ans+x.sol>=8) f.push("💡 Lösung ko‘p"); if(x.skp!=null&&x.skp>=30&&x.ans+x.sk>=8) f.push("⏭ ko‘p o‘tkazadi"); if(x.acc!=null&&x.acc<50&&x.ans>=10) f.push("⚠️ 1-urinish past"); if(x.streak>=3) f.push("🔥 "+x.streak+" kun ketma-ket"); return f; };
   const noA=Object.keys(TP.stu||{}).length-all.length;
-  body.innerHTML=`<div class="lrn-card an">
+  body.innerHTML=`${mrOn()?mrTpHTML():""}<div class="lrn-card an">
     <div class="tp-lbh"><h3>📊 Tahlil — o‘quvchilar qanday ishlayapti</h3><div class="tp-seg">${[[7,"7 kun"],[14,"14 kun"],[30,"30 kun"],[90,"90 kun"]].map(([v,t])=>`<button type="button" data-tpanp="${v}" aria-pressed="${P===v}">${t}</button>`).join("")}</div></div>
     ${(()=>{ try{ return anGrowthHTML(all,P); }catch(e){ return ""; } })()}
     ${!localStorage.getItem("tchk")?`<p class="ch-net">🔐 Avval «👥 O‘quvchilar» bo‘limida natijalarni oching (ustoz kodi).</p>`:""}
@@ -5759,7 +6266,7 @@ function anCsv(){ const P=TP.anP||7, rows=[["Ism","Oxirgi kirish","Faol kunlar",
    → Firestore s/ ga ≤18 KB bo'laklar bilan ("FB1:" belgisi bilan; ustoz natijalari o'quvchisi bularni o'tkazib yuboradi). */
 const FB_KEY={"pub":{"kty":"EC","crv":"P-256","x":"QW66iCTQjFjs_t-OfWDsmxiAlU0J06HhPxkcxZE6T1Q","y":"BSSABlK9oBSdYLMu343oOIagSb-Nx1BwEXRgTRwtnso"},"enc":{"s":"Y3xffw/I7lO4QI2xSJ1Tcg==","i":"ZCp1pwcQYeuVTyib","c":"J7SXxRkWg6KBui6Dw8fxMlNkP7ua+vZXhsm/f9j4AJxWaRjCFrD1TWoeJI+uEJwpEbkVm1Pd5/ReQ7dSsItykElw/4PfOvWrEn2BGiWZvelsC5FPNYkL9aJXFquSmBhjrramRdCxB4XRzg3tTpsYKl6QMRCuLwd8nZwztXLc8OKr4/X7Jn4F5Fadd2BA2moT3GyvVVaK7cQ8mXXwIFBtEdsNKnZ2Q9tWcgrWwc3PVdDg5zh0wilQtdUnUWwheXabWQBTtAGTYz/X8g3XUev5KHJkbgdRnr+BJTiZq9Zez7+hYbI="}};
 const FB={img:null,busy:false};
-function fbCtx(){ const c={t:Date.now(), tab:state.tab, lang:state.lang, nm:(typeof ACC!=="undefined"&&ACC.name)||"", w:innerWidth+"×"+innerHeight, ua:navigator.userAgent.slice(0,140)};
+function fbCtx(){ const c={t:Date.now(), tab:state.tab, lang:state.lang, nm:(typeof ACC!=="undefined"&&ACC.name)||"", ak:(typeof ACC!=="undefined"&&ACC.cur)||"", w:innerWidth+"×"+innerHeight, ua:navigator.userAgent.slice(0,140)};
   try{ const xe=exEl(); if(xe&&!xe.hidden&&EX.id){ c.ex={id:EX.id, si:EX.si}; if(EX.si>=0&&EX.q&&EX.qi<EX.q.length){ c.ex.i=EX.q[EX.qi]; const it=exCur(); c.ex.q=String(it.s||it.q||it.h||"").replace(/<[^>]+>/g," ").slice(0,160); c.ex.scr=EX.scr||""; } } }catch(e){}
   try{ if(V&&V.el&&!V.el.hidden&&V.cur) c.mat=V.cur.id; }catch(e){}
   try{ const l=document.getElementById("lrn"); if(l&&!l.hidden&&typeof LR!=="undefined"&&LR.id) c.lrn=LR.id; }catch(e){}
@@ -5803,7 +6310,7 @@ async function fbSend(){ const st=document.getElementById("fb-st"), tx=(document
   try{ const enc=await fbEnc({c:FB.ctx, tx:tx.slice(0,1000), ch, img:FB.img||""}), fid=fbHex().slice(0,12), N=Math.ceil(enc.length/17000);
     for(let k=0;k<N;k++){ const part="FB1:"+fid+":"+k+"/"+N+":"+enc.slice(k*17000,(k+1)*17000); await fsPut("s/"+fbHex(),{e:fsS(part),t:fsI(Date.now())}); }
     try{ sheetPost({type:"fb",nm:FB.ctx.nm||"",ch:ch.join(" · "),tx:tx.slice(0,1000),where:admWhere(FB.ctx),img:FB.img||"",dev:(FB.ctx.w||"")+" "+(FB.ctx.ua||"").replace(/^Mozilla\/5\.0 \(([^)]*)\).*/,"$1").slice(0,60)}); }catch(e){}
-    try{ hpAdd("fb",1,"",""); }catch(e){}
+    /* 👎 uchun ball avtomatik emas — ustoz jalobani ko'rib tasdiqlaganda beradi (2026-10-23, Otabek) */
     document.querySelector("#fb-ov .fb-box").innerHTML=`<div class="fb-thx"><div class="big">🙏</div><p>${esc(fbT("ok"))}</p><button type="button" class="btn primary" data-fb="x">OK</button></div>`;
   }catch(e){ st.className="fb-st err"; st.textContent=fbT("err"); document.querySelectorAll("#fb-ov [data-fb]").forEach(b=>b.disabled=false); } }
 function fbClose(){ const o=document.getElementById("fb-ov"); if(o){ o.hidden=true; o.innerHTML=""; } }
@@ -5838,13 +6345,14 @@ async function admLoad(){ const parts={}; let tok="",n=0;
   out.forEach(d=>d.done=!!done[d.id]); out.sort((a,b)=>(a.done-b.done)||((b.c&&b.c.t||0)-(a.c&&a.c.t||0))); ADM.list=out; }
 function admWhere(c){ if(!c) return "—"; if(c.ex){ const D=exData()[c.ex.id]; return "✍️ "+(D?(D.lv?D.lv+" · ":"")+D.title:c.ex.id)+(c.ex.i!=null?` · №${c.ex.i+1}`:"")+(c.ex.q?` — „${c.ex.q.slice(0,80)}“`:""); }
   if(c.mat){ const m=byId[c.mat]; return "📄 "+(m?m.title:c.mat); } if(c.lrn) return "🧠 Lernen · "+c.lrn; if(c.tp!=null) return "🎓 Ustoz paneli"; return "🏠 Bosh sahifa · "+(TABS[c.tab]?TABS[c.tab].lbl:c.tab||""); }
+function admHpDone(id){ try{ return !!(JSON.parse(localStorage.getItem("adm:hp")||"{}")||{})[id]; }catch(e){ return false; } }
 function admEl(){ let o=document.getElementById("adm"); if(!o){ o=document.createElement("div"); o.id="adm"; o.className="lrn"; o.hidden=true; document.body.appendChild(o); } return o; }
 function admRender(msg){ const o=admEl(), L=ADM.list; const ago=t=>{ const m=Math.round((Date.now()-t)/60000); return m<60?m+" daq oldin":m<1440?Math.round(m/60)+" soat oldin":Math.round(m/1440)+" kun oldin"; };
   o.innerHTML=`<div class="lrn-bar"><button class="btn" data-adm="close" aria-label="✕">✕</button><div class="lrn-tt"><b>🛠 Admin — muammolar</b><small>${L.filter(d=>!d.done).length} ta yangi · jami ${L.length}</small></div><button type="button" class="lrn-link" data-adm="reload">↻ Yangilash</button></div>
     <div class="lrn-body adm-body">${msg?`<p class="ch-net">${esc(msg)}</p>`:""}${L.length?`<ul class="adm-l">${L.map((d,i)=>`<li class="${d.done?"done":""}"><div class="adm-h"><b>${esc((d.ch||[]).join(" · ")||"Izoh")}</b><small>${esc(d.c&&d.c.nm||"mehmon")} · ${d.c&&d.c.t?ago(d.c.t):""} · ${esc(d.c&&d.c.lang||"")}</small></div>
       ${d.tx?`<p class="adm-tx">${esc(d.tx)}</p>`:""}<button type="button" class="adm-go" data-admgo="${i}">📍 ${esc(admWhere(d.c))} →</button>
       ${d.img?`<img class="adm-img" src="${d.img}" alt="" data-admimg="${i}">`:""}
-      <div class="adm-row"><small>${esc(d.c&&d.c.w||"")} · ${esc((d.c&&d.c.ua||"").replace(/^Mozilla\/5\.0 \(([^)]*)\).*/,"$1").slice(0,60))}</small><button type="button" class="lrn-link" data-admdone="${i}">${d.done?"↩ Qaytarish":"✓ Hal qilindi"}</button></div></li>`).join("")}</ul>`:`<p class="tp-empty">Hozircha muammo yuborilmagan.</p>`}</div>`;
+      <div class="adm-row"><small>${esc(d.c&&d.c.w||"")} · ${esc((d.c&&d.c.ua||"").replace(/^Mozilla\/5\.0 \(([^)]*)\).*/,"$1").slice(0,60))}</small>${d.c&&d.c.ak?(admHpDone(d.id)?`<small class="adm-hp">🏅 +1 berildi</small>`:`<button type="button" class="lrn-link" data-admhp="${i}">🏅 +1 ball</button>`):""}<button type="button" class="lrn-link" data-admdone="${i}">${d.done?"↩ Qaytarish":"✓ Hal qilindi"}</button></div></li>`).join("")}</ul>`:`<p class="tp-empty">Hozircha muammo yuborilmagan.</p>`}</div>`;
   o.hidden=false; document.body.style.overflow="hidden"; }
 async function admOpen(){ const code=prompt("Admin misiz? Kodni kiriting:"); if(!code) return;
   try{ await admUnlock(code.trim()); }catch(e){ alert("Kod noto‘g‘ri."); return; }
@@ -5857,6 +6365,8 @@ function admGo(d){ const c=d&&d.c; if(!c) return; admEl().hidden=true; document.
 document.addEventListener("click",e=>{ const a=e.target.closest("[data-adm]"); if(a){ if(a.dataset.adm==="close"){ admEl().hidden=true; document.body.style.overflow=""; } else { admRender("Yuklanmoqda…"); admLoad().then(()=>admRender()).catch(()=>admRender("Yuklab bo‘lmadi.")); } return; }
   const g=e.target.closest("[data-admgo]"); if(g){ admGo(ADM.list[+g.dataset.admgo]); return; }
   const im=e.target.closest("[data-admimg]"); if(im){ im.classList.toggle("big"); return; }
+  const hb=e.target.closest("[data-admhp]"); if(hb){ const d=ADM.list[+hb.dataset.admhp]; if(!d||!d.c||!d.c.ak||admHpDone(d.id)) return; hb.disabled=true; hb.textContent="…";
+    tpThank(d.c.ak,d.c.nm||"",1,state.lang==="ru"?"Спасибо за найденную ошибку! 🔧":"Xatoni topganing uchun rahmat! 🔧","fb").then(()=>{ let o={}; try{ o=JSON.parse(localStorage.getItem("adm:hp")||"{}")||{}; }catch(er){} o[d.id]=Date.now(); try{ localStorage.setItem("adm:hp",JSON.stringify(o)); }catch(er){} hb.outerHTML=`<small class="adm-hp">🏅 +1 berildi</small>`; }).catch(()=>{ hb.disabled=false; hb.textContent="🏅 +1 ball"; }); return; }
   const dn=e.target.closest("[data-admdone]"); if(dn){ const d=ADM.list[+dn.dataset.admdone]; let done={}; try{ done=JSON.parse(localStorage.getItem("adm:done")||"{}")||{}; }catch(er){} if(done[d.id]) delete done[d.id]; else done[d.id]=Date.now(); try{ localStorage.setItem("adm:done",JSON.stringify(done)); }catch(er){} d.done=!d.done; admRender(); return; } });
 (function(){ let tm=null; const start=e=>{ const b=e.target.closest&&e.target.closest(".prog-badge"); if(!b) return; clearTimeout(tm); tm=setTimeout(()=>{ tm=null; try{ navigator.vibrate&&navigator.vibrate(30); }catch(er){} admOpen(); },1500); };
   const stop=()=>{ clearTimeout(tm); tm=null; };
