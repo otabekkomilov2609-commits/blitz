@@ -5156,7 +5156,7 @@ function tpBoardDraw(){ const B=TP.b, ol=document.getElementById("tp-rows"); if(
     return `<li data-id="${esc(p.id)}" class="${p.st==="done"?"fin ":""}${ld&&k<3?"top"+(k+1):""}${gain[p.id]?" gain":""}">
     <span class="tp-pos">${ld&&k<3?medal[k]:k+1}${move[p.id]?`<i class="tp-up">▲${move[p.id]}</i>`:""}</span>
     <span class="tp-nm"><b>${ld&&k===0?"👑 ":""}${esc(p.n)}${st==="run"&&(p.sr|0)>=3?` <i class="tp-fire">🔥${p.sr}</i>`:""}</b>
-      <span class="tp-track"><i style="width:${pct}%"></i><em style="left:${pct}%">${p.st==="done"?"🏁":"🏃"}</em></span></span>
+      <span class="tp-track"><i style="width:${pct}%"></i><em class="${p.st==="done"?"":"run"}" style="left:${pct}%">${p.st==="done"?"🏁":"🏃"}</em></span></span>
     <span class="tp-ok">${st==="lobby"&&p.st==="wait"?"<small>tayyor ✋</small>":`${ltSc(p.ok)}<small>/${n}</small>`}${gain[p.id]?`<i class="tp-plus">+${ltSc(gain[p.id])}</i>`:""}</span>
     <span class="tp-tm">${p.st==="wait"?"—":ltFmt(p.ms)}${p.st==="play"?' <i class="tp-live">●</i>':""}</span></li>`; }).join("");
   ol.querySelectorAll("li[data-id]").forEach(li=>{ const f=first[li.dataset.id]; if(f==null) return; const d=f-li.getBoundingClientRect().top; if(!d) return;
@@ -5865,7 +5865,7 @@ function kgLaunch(){ const s=kgSets().find(x=>x.id===TP.kgGo); if(!s) return; co
 function kgPubQs(K){ return JSON.stringify({g:K.g,qs:K.g.m==="k"?K.qs.map(q=>{ const o={q:q.q}; if(q.o) o.o=q.o; else o.w=1; if(q.tm) o.tm=q.tm; return o; }):K.qs}); }
 function kgBoardOpen(R){ kgBEnd(); const K=TP.k={g:R.g,qs:R.qs,players:R.players||{},fz:R.fz||{},ctl:R.ctl||{st:"lobby",t:Date.now()},id:R.g.id}, ns=KG_NS+K.id;
   K.mq=mqMulti(cl=>{ cl.subscribe(ns+"/p/+",{qos:1}); cl.publish(ns+"/qs",kgPubQs(K),{qos:1,retain:true}); cl.publish(ns+"/ctl",JSON.stringify(K.ctl),{qos:1,retain:true}); kgNet(); },
-    (t,m)=>{ if(TP.k!==K) return; { const pid=t.split("/").pop(), was=(K.players[pid]||{}).cx|0; kgPl(K.players,t,m); const p=K.players[pid]; if(p&&(p.cx|0)>was&&K.ctl.st!=="lobby"&&K.ctl.st!=="end"){ try{ kgToast(`👀 <b>${esc(p.n)}</b> o‘yindan chiqib, boshqa oynaga o‘tdi (${p.cx}-marta)`,"cx"); }catch(e){} } } clearTimeout(K.dT); K.dT=setTimeout(kgBoardUpd,150); kgSaveSoon();
+    (t,m)=>{ if(TP.k!==K) return; { const pid=t.split("/").pop(), was=(K.players[pid]||{}).cx|0; kgPl(K.players,t,m); const p=K.players[pid]; if(p&&(p.cx|0)>was&&K.ctl.st!=="lobby"&&K.ctl.st!=="end") kgCheat(p); } clearTimeout(K.dT); K.dT=setTimeout(kgBoardUpd,150); kgSaveSoon();
       if(TP.kgR&&TP.kgR.R===K){ clearTimeout(K.rT); K.rT=setTimeout(kgRepDraw,400); } });
   clearInterval(TP.kT); TP.kT=setInterval(kgTick,250); kgRepPut(K); TP.kgR=null; kgBoard(); }
 function kgBEnd(){ const K=TP.k; if(!K) return; clearInterval(TP.kT); clearTimeout(K.dT); clearTimeout(K.allT); kgRepPut(K); if(K.mq) K.mq.end(); TP.k=null; }
@@ -5901,10 +5901,15 @@ function kgEndHTML(K){ const L=kgRank(K), medal=["🥇","🥈","🥉"], P=[L[1],
   return `${L[0]?`<div class="tp-podium kg-pod">${P.map((p,i)=>p?`<div class="pd pd${[2,1,3][i]}"><div class="pn">${esc(p.n)}</div><div class="ps">${p.ok} to‘g‘ri · ${kgTie(K,p)}</div><div class="pb">${medal[[1,0,2][i]]}</div></div>`:`<div class="pd pd${[2,1,3][i]} empty"></div>`).join("")}</div>`:""}
     <div class="kg-ctl"><button type="button" class="btn primary" data-kg="rboard">📊 Hisobot — kim qayerda xato qildi</button><button type="button" class="btn" data-kg="csv">⬇ Excel</button></div>
     <ol class="tp-rows" id="kg-rows"></ol>`; }
+/* 🚨 Doska «Cheater!» deb baqiradi (2026-10-22, Otabek) */
+function kgCheat(p){ try{ kgSnd("alarm",1); if(kgSndOn(true)) setTimeout(()=>kgSayTTS("Cheater! "+String(p.n).split(" ")[0]+"!"),350); }catch(e){}
+  let o=document.getElementById("kg-cheat"); if(!o){ o=document.createElement("div"); o.id="kg-cheat"; o.className="kg-cheat"; document.body.appendChild(o); }
+  o.innerHTML=`<div class="kg-cheat-b"><div class="kg-cheat-s">🚨</div><div class="kg-cheat-t">CHEATER!</div><div class="kg-cheat-n">${esc(p.n)}</div><div class="kg-cheat-m">o‘yindan chiqib, boshqa oynaga o‘tdi · ${p.cx|0}-marta 👀</div></div>`;
+  o.classList.remove("show"); void o.offsetWidth; o.classList.add("show"); clearTimeout(KGS.chT); KGS.chT=setTimeout(()=>o.classList.remove("show"),3200); }
 function kgRowsHTML(K,lim,mv,stk){ mv=mv||{}; stk=stk||{}; const L=kgRank(K), n=K.qs.length, medal=["🥇","🥈","🥉"], s=K.g.m==="s";
   if(!L.length) return `<li class="tp-empty">Hali hech kim yo‘q.</li>`;
   return L.slice(0,lim).map((p,k)=>{ const ld=p.ok>0&&k<3, pr=n?Math.min(100,p.cnt/n*100):0;
-    return `<li data-id="${esc(p.id)}" class="${p.st==="done"?"fin ":""}${ld?"top"+(k+1):""}${mv[p.id]>0?" gain":""}"><span class="tp-pos">${ld?medal[k]:k+1}${mv[p.id]>0?`<i class="tp-up">▲${mv[p.id]}</i>`:mv[p.id]<0?`<i class="kg-dn">▼${-mv[p.id]}</i>`:""}</span><span class="tp-nm"><b>${ld&&k===0?"👑 ":""}${esc(p.n)}${stk[p.id]>=2?`<i class="kg-stk">🔥${stk[p.id]}</i>`:""}${p.cx?`<i class="kg-cx" title="O‘yin paytida boshqa ilova/oynaga o‘tgan">👀×${p.cx}</i>`:""}</b>${s?`<span class="tp-track"><i style="width:${pr}%"></i><em style="left:${pr}%">${p.st==="done"?"🏁":"🏃"}</em></span>`:""}</span>
+    return `<li data-id="${esc(p.id)}" class="${p.st==="done"?"fin ":""}${ld?"top"+(k+1):""}${mv[p.id]>0?" gain":""}"><span class="tp-pos">${ld?medal[k]:k+1}${mv[p.id]>0?`<i class="tp-up">▲${mv[p.id]}</i>`:mv[p.id]<0?`<i class="kg-dn">▼${-mv[p.id]}</i>`:""}</span><span class="tp-nm"><b>${ld&&k===0?"👑 ":""}${esc(p.n)}${stk[p.id]>=2?`<i class="kg-stk">🔥${stk[p.id]}</i>`:""}${p.cx?`<i class="kg-cx" title="O‘yin paytida boshqa ilova/oynaga o‘tgan">👀×${p.cx}</i>`:""}</b>${s?`<span class="tp-track"><i style="width:${pr}%"></i><em class="${p.st==="done"?"":"run"}" style="left:${pr}%">${p.st==="done"?"🏁":"🏃"}</em></span>`:""}</span>
       <span class="tp-ok">${p.ok}<small>/${n}</small></span><span class="tp-tm">${kgTie(K,p)}${s&&p.st==="play"?' <i class="tp-live">●</i>':""}</span></li>`; }).join(""); }
 function kgBoardUpd(){ const K=TP.k; if(!K||TP.kgR) return; const st=K.ctl.st, P=Object.entries(K.players).filter(([i,p])=>p&&p.n);
   const c=document.getElementById("kg-cnt"); if(c) c.textContent=P.length;
@@ -5944,6 +5949,7 @@ function kgSnd(type,board){ if(!kgSndOn(board)) return; try{ kgUnlock(); const C
     lead:()=>[784,988,1175,1568].forEach((f,i)=>tone(f,.2,i*.09,"square",.06)),
     streak:()=>[880,1175,1568].forEach((f,i)=>tone(f,.11,i*.06,"triangle",.14)),
     drum:()=>{ for(let i=0;i<22;i++) tone(110+(i%2)*9,.06,i*.06,"square",.03+i*.004); },
+    alarm:()=>{ for(let i=0;i<6;i++){ tone(i%2?740:988,.22,i*.22,"square",.12); } },
     fan:()=>[[523,0],[659,.15],[784,.3],[1047,.45],[784,.7],[1047,.85]].forEach(([f,s])=>tone(f,s>=.85?.8:.16,s,"triangle",.2)) };
   (S[type]||(()=>{}))(); }catch(e){} }
 /* Kahoot ovozi: ElevenLabs Leni (oldindan yozilgan iboralar, ism aytilmaydi — ekranda ko'rinadi). 2026-10-20 */
